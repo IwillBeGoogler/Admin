@@ -1,0 +1,8 @@
+{
+  "name": "openapi-gen",
+  "private": true,
+  "dependencies": {
+    "openapi-typescript": "^7.13.0",
+    "typescript": "5"
+  }
+}

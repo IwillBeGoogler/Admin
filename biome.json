@@ -1,0 +1,59 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+  "vcs": {
+    "enabled": false
+  },
+  "files": {
+    "includes": [
+      "**",
+      "!node_modules",
+      "!dist",
+      "!tools",
+      "!src/app/routeTree.gen.ts",
+      "!src/shared/api/openapi.d.ts",
+      "!playwright-report",
+      "!coverage",
+      "!e2e/.auth",
+      "!test-results",
+      "!public/mockServiceWorker.js"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 120
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended",
+      "a11y": {
+        "noLabelWithoutControl": {
+          "level": "error",
+          "options": {
+            "inputComponents": ["Checkbox", "Input", "Select", "Textarea"]
+          }
+        }
+      }
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double"
+    }
+  },
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+node_modules
+dist
+.DS_Store
+coverage
+playwright-report
+test-results
+e2e/.auth
+tools/openapi/node_modules
+
+.env
+.env.*
+!.env.example
+coverage
+.tanstack
+*.log
