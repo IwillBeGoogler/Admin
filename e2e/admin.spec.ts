@@ -45,7 +45,7 @@ test.describe
       await expect(page.getByRole("button", { name: new RegExp(`Version 1 · ${title}`) })).toBeVisible();
 
       // list → filter by category → delete
-      await page.getByRole("link", { name: "Back" }).click();
+      await page.getByRole("link", { name: "Back", exact: true }).click();
       await page.getByLabel("Category", { exact: true }).selectOption({ label: cat });
       await expect(page.getByRole("link", { name: `${title} v2` }).first()).toBeVisible();
       await page.getByRole("button", { name: `Delete: ${title} v2` }).click();

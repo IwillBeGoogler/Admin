@@ -1,6 +1,6 @@
 # Blog Admin (React)
 
-Admin panel for the iBlog Medium-style blog. Talks to the Go monolith ([iblog-monolith-go](https://github.com/iBlog/iblog-monolith-go), `:8080`) through `/api`.
+Admin panel for the IWillBeGoogler Medium-style blog. Talks to the Go monolith ([iwillbegoogler-monolith-go](https://github.com/IWillBeGoogler/iwillbegoogler-monolith-go), `:8080`) through `/api`.
 
 ## Stack
 
@@ -15,10 +15,10 @@ bun install
 bun run dev            # http://localhost:5174, /api proxied to http://localhost:8080
 ```
 
-Backend (in `iblog-monolith-go`): `docker compose up -d` — API on `:8080`, this panel on `:8082`.
+Backend (in `iwillbegoogler-monolith-go`): `docker compose up -d` — API on `:8080`, this panel on `:8082`.
 
 Admin credentials come from the backend's seed env: `ADMIN_USERNAME` / `ADMIN_PASSWORD`
-(defaults in `iblog-monolith-go/docker-compose.yml`: `admin` / `admin12345`; local runs read `iblog-monolith-go/.env`).
+(defaults in `iwillbegoogler-monolith-go/docker-compose.yml`: `admin` / `admin12345`; local runs read `iwillbegoogler-monolith-go/.env`).
 
 ## Scripts
 

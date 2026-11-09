@@ -9,7 +9,10 @@ const search = z.object({
 });
 
 /** Only same-origin paths; never an absolute URL from the query string. */
-const safeRedirect = (r: string | undefined) => (r?.startsWith("/") && !r.startsWith("//") ? r : "/");
+const safeRedirect = (r: string | undefined) =>
+  r?.startsWith("/") && !r.startsWith("//") && !r.includes("\\") && ![...r].some((c) => c.charCodeAt(0) < 0x20)
+    ? r
+    : "/";
 
 export const Route = createFileRoute("/login")({
   validateSearch: search,
