@@ -101,7 +101,7 @@ export function CommandPalette({ onOpenChange }: { onOpenChange: (open: boolean)
   return (
     <D.Root open onOpenChange={onOpenChange}>
       <D.Portal>
-        <D.Overlay className="fixed inset-0 z-50 bg-black/50" />
+        <D.Overlay className="fixed inset-0 z-50 bg-overlay backdrop-blur-sm" />
         <D.Content
           aria-describedby={undefined}
           className="fixed left-1/2 top-[15dvh] z-50 w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground shadow-lg"

@@ -7,7 +7,6 @@ import {
   MonitorIcon,
   MonitorSmartphoneIcon,
   MoonIcon,
-  NewspaperIcon,
   PanelLeftIcon,
   SearchIcon,
   SunIcon,
@@ -115,7 +114,7 @@ function Brand({ compact = false }: { compact?: boolean }) {
         compact ? "px-2" : "px-3",
       )}
     >
-      <NewspaperIcon className="size-5 shrink-0 text-primary" aria-hidden />
+      <img src="/logo-mark.svg" alt="" aria-hidden className="size-6 shrink-0 rounded-md" />
       <span className={compact ? "sr-only" : undefined}>{t("app.name")}</span>
     </Link>
   );
@@ -341,7 +340,7 @@ export function AdminLayout({ admin, children }: { admin: CurrentAdmin; children
                 </Button>
               </D.Trigger>
               <D.Portal>
-                <D.Overlay className="fixed inset-0 z-40 bg-black/50 lg:hidden" />
+                <D.Overlay className="fixed inset-0 z-40 bg-overlay backdrop-blur-sm lg:hidden" />
                 <D.Content className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col border-r border-border bg-sidebar lg:hidden">
                   <D.Title className="sr-only">{t("app.menu")}</D.Title>
                   <D.Description className="sr-only">{t("app.name")}</D.Description>
