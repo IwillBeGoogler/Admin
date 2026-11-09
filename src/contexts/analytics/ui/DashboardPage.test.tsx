@@ -42,6 +42,7 @@ describe("DashboardPage", () => {
           : HttpResponse.json({ data: { posts: 0, comments: 0, likes: 0, categories: 0, users: 1 } }),
       ),
       http.get(api("/categories"), () => problem(500, "cats down")),
+      http.get(api("/admin/stats/site"), () => HttpResponse.json({ data: { totals: {}, days: [] } })),
       http.get(api("/admin/analytics"), () => HttpResponse.json({ data: { days: 30, mau: 0, funnel: [] } })),
     );
     const { user } = renderUI(<DashboardPage />);

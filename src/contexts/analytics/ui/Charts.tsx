@@ -120,3 +120,45 @@ export function DailyChart({
     </ResponsiveContainer>
   );
 }
+
+/** Daily views of posts, diagrams and pages over the same days. */
+export function ViewsChart({
+  data,
+  labels,
+}: {
+  data: { day: string; posts: number; diagrams: number; pages: number }[];
+  labels: { posts: string; diagrams: string; pages: string };
+}) {
+  const axis = { fill: "var(--muted-foreground)", fontSize: 12 };
+  const area = (key: "posts" | "diagrams" | "pages", color: string) => (
+    <Area
+      type="monotone"
+      dataKey={key}
+      name={labels[key]}
+      stroke={color}
+      fill={color}
+      fillOpacity={0.15}
+      isAnimationActive={false}
+    />
+  );
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+        <XAxis
+          dataKey="day"
+          tickFormatter={(d: string) => d.slice(5)}
+          tick={axis}
+          tickLine={false}
+          axisLine={false}
+          minTickGap={24}
+        />
+        <YAxis allowDecimals={false} tick={axis} tickLine={false} axisLine={false} />
+        <Tooltip {...tooltip} />
+        {area("posts", "var(--chart-1)")}
+        {area("diagrams", "var(--chart-2)")}
+        {area("pages", "var(--chart-3)")}
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+}

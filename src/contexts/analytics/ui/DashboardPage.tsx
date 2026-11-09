@@ -9,6 +9,7 @@ import { EmptyState, ErrorState, PageHeader } from "@/shared/ui/states";
 import { useStats } from "../application/queries";
 import { ratios, type Stats, shareOf, topN } from "../domain/stats";
 import { ProductAnalytics } from "./ProductAnalytics";
+import { SiteStats } from "./SiteStats";
 
 const TotalsChart = lazy(() => import("./Charts").then((m) => ({ default: m.TotalsChart })));
 const CategoryChart = lazy(() => import("./Charts").then((m) => ({ default: m.CategoryChart })));
@@ -157,6 +158,7 @@ export function DashboardPage() {
               </CardContent>
             </Card>
           </div>
+          <SiteStats />
           <ProductAnalytics />
         </div>
       )}
