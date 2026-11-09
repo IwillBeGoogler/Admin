@@ -10,7 +10,7 @@ import { notifySuccess } from "@/shared/lib/notify";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent } from "@/shared/ui/card";
-import { ConfirmDialog } from "@/shared/ui/dialog";
+import { ConfirmDialog, Dialog, DialogContent, DialogTitle } from "@/shared/ui/dialog";
 import { Field } from "@/shared/ui/field";
 import { Input } from "@/shared/ui/input";
 import { ListView } from "@/shared/ui/list-view";
@@ -129,6 +129,7 @@ export function LabelsPage() {
   const create = useCreateLabel();
   const del = useDeleteLabel();
   const confirm = useDeleteConfirm<{ id: number; name: string }>();
+  const [creating, setCreating] = useState(false);
   const form = useForm<LabelInput, unknown, { name: string; color: string }>({
     resolver: zodResolver(labelInputSchema),
     defaultValues: { name: "", color: "#3b82f6" },
@@ -142,41 +143,57 @@ export function LabelsPage() {
       onSuccess: () => {
         notifySuccess(t("common.saved"));
         form.reset({ name: "", color: v.color });
+        setCreating(false);
       },
       onError: (er) => form.setError("name", { message: errorMessage(er) }),
     }),
   );
   return (
     <>
-      <PageHeader title={t("labels.title")} />
-      <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-        <Card className="h-fit">
-          <CardContent className="pt-5">
-            <form onSubmit={submit} noValidate className="grid gap-3">
-              <Field label={t("labels.new")} error={msg(e.name?.message)}>
-                {(a) => <Input {...a} {...form.register("name")} />}
-              </Field>
-              <Field label={t("labels.color")} error={msg(e.color?.message)}>
-                {(a) => (
-                  <div className="flex gap-2">
-                    <input
-                      type="color"
-                      aria-label={t("labels.color")}
-                      className="h-9 w-12 cursor-pointer rounded-md border border-input bg-background p-1"
-                      value={/^#[0-9a-f]{6}$/i.test(color) ? color : "#000000"}
-                      onChange={(ev) => form.setValue("color", ev.target.value, { shouldValidate: true })}
-                    />
-                    <Input {...a} {...form.register("color")} className="font-mono" />
-                  </div>
-                )}
-              </Field>
-              <Button type="submit" disabled={create.isPending}>
-                <PlusIcon aria-hidden />
-                {t("common.create")}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+      <PageHeader
+        title={t("labels.title")}
+        actions={
+          <Button onClick={() => setCreating(true)}>
+            <PlusIcon aria-hidden />
+            {t("labels.new")}
+          </Button>
+        }
+      />
+      <Dialog
+        open={creating}
+        onOpenChange={(o) => {
+          setCreating(o);
+          if (!o) form.clearErrors();
+        }}
+      >
+        <DialogContent closeLabel={t("common.close")} locked={create.isPending} aria-describedby={undefined}>
+          <DialogTitle>{t("labels.new")}</DialogTitle>
+          <form onSubmit={submit} noValidate className="grid gap-3">
+            <Field label={t("common.name")} error={msg(e.name?.message)}>
+              {(a) => <Input {...a} {...form.register("name")} autoFocus />}
+            </Field>
+            <Field label={t("labels.color")} error={msg(e.color?.message)}>
+              {(a) => (
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    aria-label={t("labels.color")}
+                    className="h-9 w-12 cursor-pointer rounded-md border border-input bg-background p-1"
+                    value={/^#[0-9a-f]{6}$/i.test(color) ? color : "#000000"}
+                    onChange={(ev) => form.setValue("color", ev.target.value, { shouldValidate: true })}
+                  />
+                  <Input {...a} {...form.register("color")} className="font-mono" />
+                </div>
+              )}
+            </Field>
+            <Button type="submit" disabled={create.isPending}>
+              <PlusIcon aria-hidden />
+              {t("common.create")}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+      <div>
         <ListView query={q} items={q.data ?? []} empty={{ title: t("labels.empty") }}>
           {(rows) => (
             <ul className="divide-y divide-border">
