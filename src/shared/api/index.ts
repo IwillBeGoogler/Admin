@@ -1,5 +1,6 @@
 import { createHttpClient } from "@/shared/http/client";
 import { createTokenStore } from "@/shared/http/tokenStore";
+import { settingsSync } from "@/shared/settingsSync";
 import { currentLocale } from "@/shared/i18n";
 
 export type { components as ApiSchemas, paths as ApiPaths } from "./openapi";
@@ -20,3 +21,6 @@ export const http = createHttpClient({
     for (const l of expiredListeners) l();
   },
 });
+
+// Signed-in admins' settings (theme, language, sidebar) follow them across devices.
+settingsSync.start({ http: http as never, tokens });

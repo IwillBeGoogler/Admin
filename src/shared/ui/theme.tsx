@@ -1,3 +1,4 @@
+import { settingsSync } from "@/shared/settingsSync";
 import { createContext, type ReactNode, use, useEffect, useState } from "react";
 
 export type Theme = "light" | "dark" | "system";
@@ -11,10 +12,31 @@ const read = (): Theme => {
   }
 };
 
+const isTheme = (v: unknown): v is Theme => v === "light" || v === "dark" || v === "system";
+
 const Ctx = createContext<{ theme: Theme; setTheme: (t: Theme) => void } | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(read);
+  const [theme, setThemeState] = useState<Theme>(read);
+  const setTheme = (t: Theme) => {
+    setThemeState(t);
+    settingsSync.push("admin.theme", t);
+  };
+  useEffect(
+    () =>
+      settingsSync.register({
+        key: "admin.theme",
+        get: () => {
+          try {
+            return localStorage.getItem(KEY) ?? undefined;
+          } catch {
+            return undefined;
+          }
+        },
+        apply: (v) => isTheme(v) && setThemeState(v),
+      }),
+    [],
+  );
   useEffect(() => {
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const apply = () => {

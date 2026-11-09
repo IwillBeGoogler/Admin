@@ -1,4 +1,5 @@
 import { createContext, type ReactNode, use, useEffect, useState } from "react";
+import { settingsSync } from "../settingsSync";
 import { type Dict, en } from "./en";
 import { ru } from "./ru";
 import { uz } from "./uz";
@@ -48,7 +49,27 @@ interface I18n {
 const Ctx = createContext<I18n | null>(null);
 
 export function I18nProvider({ children, initial }: { children: ReactNode; initial?: Locale }) {
-  const [locale, setLocale] = useState<Locale>(initial ?? current);
+  const [locale, setLocaleState] = useState<Locale>(initial ?? current);
+  const setLocale = (l: Locale) => {
+    setLocaleState(l);
+    settingsSync.push("admin.lang", l);
+  };
+  useEffect(
+    () =>
+      settingsSync.register({
+        key: "admin.lang",
+        get: () => {
+          try {
+            const s = localStorage.getItem(KEY);
+            return isLocale(s) ? s : undefined;
+          } catch {
+            return undefined;
+          }
+        },
+        apply: (v) => isLocale(v) && setLocaleState(v),
+      }),
+    [],
+  );
   current = locale;
   useEffect(() => {
     document.documentElement.lang = locale;

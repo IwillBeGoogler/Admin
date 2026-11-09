@@ -24,7 +24,12 @@ export function SiteStats() {
   const q = useSiteStats(10);
   const s = q.data;
   const n = (v: number) => formatNumber(v, locale);
-  const daily = s?.days.map((d) => ({ day: d.day, posts: d.post_views, diagrams: d.diagram_views, pages: d.page_views }));
+  const daily = s?.days.map((d) => ({
+    day: d.day,
+    posts: d.post_views,
+    diagrams: d.diagram_views,
+    pages: d.page_views,
+  }));
 
   return (
     <section aria-labelledby="site-title" className="grid gap-4">
@@ -64,7 +69,11 @@ export function SiteStats() {
                   {daily ? (
                     <ViewsChart
                       data={daily}
-                      labels={{ posts: t("site.postViews"), diagrams: t("site.diagramViews"), pages: t("site.pageViews") }}
+                      labels={{
+                        posts: t("site.postViews"),
+                        diagrams: t("site.diagramViews"),
+                        pages: t("site.pageViews"),
+                      }}
                     />
                   ) : (
                     <Skeleton className="h-full w-full" />
