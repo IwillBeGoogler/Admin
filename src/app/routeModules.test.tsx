@@ -3,7 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import { describe, expect, it } from "vitest";
-import { signIn } from "@/test/fixtures";
+import { post, signIn } from "@/test/fixtures";
 import { api, server } from "@/test/server";
 import { Providers } from "./providers";
 import { createQueryClient } from "./queryClient";
@@ -11,10 +11,11 @@ import { routeTree } from "./routeTree.gen";
 
 const empty = { data: [], meta: { page: 1, limit: 20, total: 0, has_more: false } };
 
-async function mount(path: string) {
+async function mount(path: string, extra: Parameters<typeof server.use> = []) {
   localStorage.setItem("admin.locale", "en");
   signIn();
   server.use(
+    ...extra,
     http.get(api("/*"), ({ request }) => {
       const p = new URL(request.url).pathname;
       if (p.endsWith("/me") || p.endsWith("/guard/auth/me")) return undefined;
@@ -106,5 +107,29 @@ describe("route modules", () => {
   it("invalid post id shows 404", async () => {
     await mount("/posts/abc");
     await waitFor(() => expect(document.body.textContent).toContain("404"));
+  });
+
+  it("saving a new post navigates to its editor", async () => {
+    const router = await mount("/posts/new");
+    server.use(
+      http.post(api("/posts"), () => HttpResponse.json({ data: post({ id: 21 }) }, { status: 201 })),
+      http.get(api("/posts/21"), () => HttpResponse.json({ data: post({ id: 21 }) })),
+      http.get(api("/posts/21/revisions"), () => HttpResponse.json({ data: [] })),
+    );
+    await userEvent.type(await screen.findByLabelText("Title"), "Hello");
+    await userEvent.click(screen.getByRole("button", { name: "Create" }));
+    await waitFor(() => expect(router.state.location.pathname).toBe("/posts/21"));
+  });
+
+  it("saving an existing post stays on the editor", async () => {
+    const router = await mount("/posts/4", [
+      http.get(api("/posts/4"), () => HttpResponse.json({ data: post() })),
+      http.get(api("/posts/4/revisions"), () => HttpResponse.json({ data: [] })),
+      http.put(api("/posts/4"), () => HttpResponse.json({ data: post() })),
+    ]);
+    const title = await screen.findByLabelText("Title");
+    await userEvent.type(title, "!");
+    await userEvent.click(screen.getByRole("button", { name: /Save/ }));
+    await waitFor(() => expect(router.state.location.pathname).toBe("/posts/4"));
   });
 });

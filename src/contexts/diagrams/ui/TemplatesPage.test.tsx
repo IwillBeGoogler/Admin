@@ -118,4 +118,50 @@ describe("TemplatesPage", () => {
     await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Delete" }));
     expect(await screen.findByText("No templates yet.")).toBeInTheDocument();
   });
+
+  it("move up works, description shows, toggle failure is reported, 5xx save toasts, cancel closes, validation", async () => {
+    signIn(["templates.manage"]);
+    const reorders: unknown[] = [];
+    const first = diagramTemplate({ id: "a", title: "First", description: "" });
+    const second = diagramTemplate({ id: "b", title: "Second", position: 2, description: "Desc", published: false });
+    server.use(
+      http.get(api("/admin/diagrams/templates"), () => page([first, second])),
+      http.post(api("/admin/diagrams/templates/reorder"), async ({ request }) => {
+        reorders.push(await request.json());
+        return problem(500, "reorder failed");
+      }),
+      http.patch(api("/admin/diagrams/templates/b"), (req) =>
+        req.request.json().then(() => problem(500, "patch failed")),
+      ),
+    );
+    const { user } = await renderRouted(<TemplatesPage />);
+    expect(await screen.findByText("Desc")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Move up: Second" }));
+    await waitFor(() => expect(reorders).toEqual([{ ids: ["b", "a"] }]));
+    expect(await screen.findByText(/reorder failed/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Published: Second" }));
+    expect(await screen.findByText(/patch failed/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Edit: Second" }));
+    let dialog = within(await screen.findByRole("dialog"));
+    await user.click(dialog.getByRole("button", { name: "Save" }));
+    expect(await screen.findAllByText(/patch failed/)).not.toHaveLength(0);
+    await user.click(dialog.getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await user.click(screen.getByRole("button", { name: "New template" }));
+    dialog = within(await screen.findByRole("dialog"));
+    await user.click(dialog.getByRole("button", { name: "Save" }));
+    expect((await dialog.findAllByRole("alert")).length).toBeGreaterThan(0);
+  });
+
+  it("delete failure keeps the dialog", async () => {
+    signIn(["templates.manage"]);
+    server.use(
+      http.get(api("/admin/diagrams/templates"), () => page([diagramTemplate()])),
+      http.delete(api("/admin/diagrams/templates/t1"), () => problem(500, "no")),
+    );
+    const { user } = await renderRouted(<TemplatesPage />);
+    await user.click(await screen.findByRole("button", { name: "Delete: URL shortener" }));
+    await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Delete" }));
+    await waitFor(() => expect(screen.getByRole("alertdialog")).toBeInTheDocument());
+  });
 });

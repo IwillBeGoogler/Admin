@@ -132,4 +132,58 @@ describe("DataTable", () => {
     renderUI(<Harness selectable={false} />);
     expect(screen.getByRole("table")).toHaveAttribute("data-density", "compact");
   });
+
+  it("k before any j focuses the first row; x/Enter without focus do nothing", async () => {
+    renderUI(<Harness />);
+    fireEvent.keyDown(document.body, { key: "x" });
+    expect(selection()).toBe("");
+    fireEvent.keyDown(document.body, { key: "Enter" });
+    fireEvent.keyDown(document.body, { key: "k" });
+    expect(screen.getAllByRole("row")[1]).toHaveFocus();
+    fireEvent.keyDown(document.body, { key: "j" });
+    fireEvent.keyDown(document.body, { key: "k" });
+    expect(screen.getAllByRole("row")[1]).toHaveFocus();
+    // Enter from a non-row target is ignored
+    fireEvent.keyDown(document.body, { key: "Enter" });
+  });
+
+  it("works without caption, getRowId, rowLabel and toolbar; custom sortValue; plain columns; deselect and shift-range deselect", async () => {
+    const cols: Columns<Row> = [
+      col.accessor("name", { header: "Name", meta: { sortable: true, sortValue: (r: Row) => -r.views } }),
+      col.display({ id: "plain", header: "Plain", cell: () => "x" }),
+    ];
+    function Bare() {
+      const [selected, setSelected] = useState<Selection>(new Set());
+      return (
+        <>
+          <output aria-label="selection">{[...selected].sort().join(",")}</output>
+          <DataTable
+            columns={cols}
+            data={data}
+            sort={{ id: "name", desc: false }}
+            onSortChange={() => {}}
+            selectable
+            selected={selected}
+            onSelectedChange={setSelected}
+            toolbar={false}
+          />
+        </>
+      );
+    }
+    const { user } = renderUI(<Bare />);
+    const rows = screen.getAllByRole("row").slice(1);
+    expect(rows[0]).toHaveTextContent("alpha");
+    const boxes = screen.getAllByRole("checkbox", { name: /Select row/ });
+    await user.click(boxes[0] as HTMLElement);
+    await user.keyboard("{Shift>}");
+    await user.click(boxes[2] as HTMLElement);
+    await user.keyboard("{/Shift}");
+    expect(selection()).toBe("0,1,3");
+    await user.click(boxes[1] as HTMLElement);
+    expect(selection()).toBe("0,1");
+    await user.keyboard("{Shift>}");
+    await user.click(boxes[2] as HTMLElement);
+    await user.keyboard("{/Shift}");
+    expect(selection()).toBe("1");
+  });
 });

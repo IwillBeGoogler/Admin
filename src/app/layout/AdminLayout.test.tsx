@@ -134,4 +134,49 @@ describe("AdminLayout", () => {
     expect(document.title).toBe("Reports · Blog Admin");
     expect(JSON.parse(localStorage.getItem("admin.recent") ?? "[]")[0]).toBe("/reports?status=open");
   });
+
+  it("account menu opens sessions; language and theme radios switch; help button and palette buttons open dialogs", async () => {
+    signIn();
+    server.use(
+      ...apiMocks(),
+      http.get(api("/me/sessions"), () => HttpResponse.json({ data: [] })),
+    );
+    const { user, router } = renderApp("/comments");
+    await screen.findByRole("heading", { name: "Comments", level: 1 });
+    await user.click(screen.getByRole("button", { name: "Theme" }));
+    await user.click(await screen.findByRole("menuitemradio", { name: "Dark" }));
+    await waitFor(() => expect(document.documentElement.classList.contains("dark")).toBe(true));
+    await user.click(screen.getByRole("button", { name: "Keyboard shortcuts" }));
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    await user.click(screen.getByRole("button", { name: "Account menu: admin" }));
+    await user.click(await screen.findByRole("menuitem", { name: "My sessions" }));
+    await waitFor(() => expect(router.state.location.pathname).toBe("/sessions"));
+    await user.click(screen.getByRole("button", { name: "Language" }));
+    await user.click(await screen.findByRole("menuitemradio", { name: "Русский" }));
+    await waitFor(() => expect(localStorage.getItem("admin.locale")).toBe("ru"));
+    await user.click(screen.getByRole("button", { name: /Язык|Language/ }));
+    await user.click(await screen.findByRole("menuitemradio", { name: "English" }));
+    await waitFor(() => expect(localStorage.getItem("admin.locale")).toBe("en"));
+  });
+
+  it("/ with no list search opens the palette; Ctrl+K toggles it closed", async () => {
+    signIn();
+    server.use(...apiMocks());
+    renderApp("/");
+    await screen.findByRole("heading", { name: "Dashboard", level: 1 });
+    fireEvent.keyDown(document.body, { key: "/" });
+    expect(await screen.findByPlaceholderText("Type a command or search…")).toBeInTheDocument();
+    fireEvent.keyDown(document.body, { key: "k", ctrlKey: true });
+    await waitFor(() => expect(screen.queryByPlaceholderText("Type a command or search…")).toBeNull());
+  });
+
+  it("sidebar hotkey toggles collapse", async () => {
+    signIn();
+    server.use(...apiMocks());
+    renderApp("/");
+    await screen.findByRole("heading", { name: "Dashboard", level: 1 });
+    fireEvent.keyDown(document.body, { key: "b", ctrlKey: true });
+    await waitFor(() => expect(localStorage.getItem("admin.sidebar")).toBe("collapsed"));
+  });
 });

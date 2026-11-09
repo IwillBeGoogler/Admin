@@ -161,4 +161,135 @@ describe("PostEditorPage", () => {
     await waitFor(() => expect(onSaved).toHaveBeenCalledWith(12));
     expect(saved).toBe(true);
   });
+
+  it("loading state, then load error with retry", async () => {
+    signIn();
+    let n = 0;
+    server.use(
+      ...taxonomy(),
+      http.get(api("/posts/4/revisions"), () => HttpResponse.json({ data: [] })),
+      http.get(api("/posts/4"), async () => {
+        n++;
+        if (n === 1) {
+          await new Promise((r) => setTimeout(r, 100));
+          return problem(500, "db down");
+        }
+        return HttpResponse.json({ data: post() });
+      }),
+    );
+    const { user } = await renderRouted(<PostEditorPage postId={4} onSaved={() => {}} />);
+    expect(await screen.findByRole("status", { name: "Loading…" })).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent("db down");
+    await user.click(screen.getByRole("button", { name: "Retry" }));
+    expect(await screen.findByDisplayValue("QA probe")).toBeInTheDocument();
+    expect(await screen.findByText("No earlier revisions.")).toBeInTheDocument();
+  });
+
+  it("unexpected save failures toast instead of inline; scheduled shows the time field; labels toggle; Mod+Enter publishes", async () => {
+    signIn();
+    let bodies: Record<string, unknown>[] = [];
+    server.use(
+      ...taxonomy(),
+      http.post(api("/posts"), async ({ request }) => {
+        bodies.push((await request.json()) as Record<string, unknown>);
+        return problem(500, "kaput");
+      }),
+    );
+    const { user } = await renderRouted(<PostEditorPage onSaved={() => {}} />);
+    await user.type(await screen.findByLabelText("Title"), "Hi");
+    await user.selectOptions(screen.getByLabelText("Status"), "scheduled");
+    expect(screen.getByLabelText("Publish at")).toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText("Status"), "draft");
+    const hot = await screen.findByLabelText("Hot");
+    await user.click(hot);
+    await user.click(hot);
+    await user.click(screen.getByRole("button", { name: "Create" }));
+    expect(await screen.findByText(/kaput/)).toBeInTheDocument();
+    expect(screen.queryByText("kaput", { selector: "p" })).toBeNull();
+    bodies = [];
+    await user.keyboard("{Control>}{Enter}{/Control}");
+    await waitFor(() => expect(bodies.length).toBeGreaterThan(0));
+    expect(bodies[0]).toMatchObject({ status: "published" });
+  });
+
+  it("revision dialog: load error, empty editor name, close", async () => {
+    signIn();
+    server.use(
+      ...taxonomy(),
+      http.get(api("/posts/4"), () => HttpResponse.json({ data: post() })),
+      http.get(api("/posts/4/revisions"), () =>
+        HttpResponse.json({
+          data: [
+            {
+              id: 1,
+              post_id: 4,
+              version: 1,
+              title: "Old",
+              subtitle: "",
+              editor_id: 0,
+              editor: "",
+              created_at: "2026-10-05T00:00:00Z",
+            },
+          ],
+        }),
+      ),
+      http.get(api("/posts/4/revisions/1"), () => problem(500, "no diff")),
+    );
+    const { user } = await renderRouted(<PostEditorPage postId={4} onSaved={() => {}} />);
+    await user.click(await screen.findByRole("button", { name: /Version 1/ }));
+    const dlg = await screen.findByRole("dialog");
+    expect(await within(dlg).findByRole("alert")).toHaveTextContent("no diff");
+    await user.click(within(dlg).getAllByRole("button", { name: "Close" })[0] as HTMLElement);
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("diff view renders context lines and subtitle/body changes", async () => {
+    signIn();
+    server.use(
+      ...taxonomy(),
+      http.get(api("/posts/4"), () => HttpResponse.json({ data: post() })),
+      http.get(api("/posts/4/revisions"), () =>
+        HttpResponse.json({
+          data: [
+            {
+              id: 2,
+              post_id: 4,
+              version: 2,
+              title: "T",
+              subtitle: "",
+              editor_id: 3,
+              editor: "admin",
+              created_at: "2026-10-05T00:00:00Z",
+            },
+          ],
+        }),
+      ),
+      http.get(api("/posts/4/revisions/2"), () =>
+        HttpResponse.json({
+          data: {
+            id: 2,
+            post_id: 4,
+            version: 2,
+            title: "T",
+            created_at: "2026-10-05T00:00:00Z",
+            diff: {
+              title: [],
+              subtitle: [{ op: "+", text: "sub" }],
+              body: [
+                { op: "=", text: "" },
+                { op: "-", text: "gone" },
+              ],
+              added: 1,
+              removed: 1,
+            },
+          },
+        }),
+      ),
+    );
+    const { user } = await renderRouted(<PostEditorPage postId={4} onSaved={() => {}} />);
+    await user.click(await screen.findByRole("button", { name: /Version 2/ }));
+    const dlg = await screen.findByRole("dialog");
+    expect(await within(dlg).findByText("sub")).toBeInTheDocument();
+    expect(within(dlg).getByText("gone")).toBeInTheDocument();
+  });
 });

@@ -109,7 +109,12 @@ describe("post form edge rules", () => {
     expect(bad.publish_at).toBeNull();
   });
   it("postToForm tolerates missing tags/labels and unknown status", () => {
-    const f = postToForm({ ...postSchema.parse(basePost()), tags: undefined, labels: undefined, status: "weird" } as never);
+    const f = postToForm({
+      ...postSchema.parse(basePost()),
+      tags: undefined,
+      labels: undefined,
+      status: "weird",
+    } as never);
     expect(f.tags).toBe("");
     expect(f.labelIds).toEqual([]);
     expect(f.status).toBe("published");

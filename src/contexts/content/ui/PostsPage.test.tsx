@@ -127,4 +127,116 @@ describe("PostsPage", () => {
     await user.click(within(views).getByRole("button"));
     expect(onFiltersChange).toHaveBeenCalledWith({ sort: "views" });
   });
+
+  it("all chips render and remove; source select, label select; debounced search", async () => {
+    signIn();
+    server.use(
+      ...taxonomy(),
+      http.get(api("/admin/posts"), () => page([])),
+      http.get(api("/posts"), () => page([])),
+    );
+    const change = vi.fn();
+    const { user } = await renderRouted(
+      <PostsPage filters={{ q: "x", source: "scheduled", label: 99, category: 77 }} onFiltersChange={change} />,
+    );
+    expect(await screen.findByText("#99")).toBeInTheDocument();
+    expect(screen.getByText("#77")).toBeInTheDocument();
+    for (const [name, patch] of [
+      ["Search", { q: undefined }],
+      ["Show", { source: undefined }],
+      ["Label", { label: undefined }],
+      ["Category", { category: undefined }],
+    ] as const) {
+      await user.click(screen.getByRole("button", { name: `Remove filter ${name}` }));
+      expect(change).toHaveBeenLastCalledWith(expect.objectContaining(patch));
+    }
+    await user.selectOptions(screen.getByLabelText("Show"), "public");
+    expect(change).toHaveBeenLastCalledWith(expect.objectContaining({ source: undefined }));
+    await user.selectOptions(screen.getByLabelText("Show"), "draft");
+    expect(change).toHaveBeenLastCalledWith(expect.objectContaining({ source: "draft" }));
+  });
+
+  it("label select and clearing category/label; search typing", async () => {
+    signIn();
+    server.use(
+      ...taxonomy(),
+      http.get(api("/posts"), () => page([])),
+    );
+    const change = vi.fn();
+    const { user } = await renderRouted(<PostsPage filters={{ category: 1, label: 2 }} onFiltersChange={change} />);
+    await user.selectOptions(await screen.findByLabelText("Label"), "");
+    expect(change).toHaveBeenLastCalledWith({ category: 1, label: undefined });
+    await user.selectOptions(screen.getByLabelText("Category"), "");
+    expect(change).toHaveBeenLastCalledWith({ category: undefined, label: 2 });
+    await user.type(screen.getByRole("searchbox"), "k");
+    await waitFor(() => expect(change).toHaveBeenLastCalledWith({ category: 1, label: 2, q: "k" }, { replace: true }));
+  });
+
+  it("n navigates to new post; empty state offers create; non-creators don't", async () => {
+    signIn();
+    server.use(
+      ...taxonomy(),
+      http.get(api("/posts"), () => page([])),
+    );
+    const { user, router } = await renderRouted(<PostsPage filters={{}} onFiltersChange={() => {}} />);
+    expect(await screen.findByText("No posts match these filters.")).toBeInTheDocument();
+    await user.keyboard("n");
+    await waitFor(() => expect(router.state.location.pathname).toBe("/posts/new"));
+  });
+
+  it("unknown category/draft rows show a dash; scheduled time; delete via row; bulk delete; clear selection", async () => {
+    signIn();
+    const gone = new Set<string>();
+    server.use(
+      ...taxonomy(),
+      http.get(api("/posts"), () =>
+        page(
+          [
+            post({
+              category_id: 999,
+              tags: undefined,
+              published_at: undefined,
+              publish_at: "2031-01-01T00:00:00Z",
+              id: 8,
+            }),
+            post({ id: 9, title: "Nine" }),
+          ].filter((p) => !gone.has(String(p.id))),
+        ),
+      ),
+      http.delete(api("/posts/:id"), ({ params }) => {
+        gone.add(String(params.id));
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    const { user } = await renderRouted(<PostsPage filters={{}} onFiltersChange={() => {}} />);
+    await screen.findByText("Nine");
+    expect(screen.getAllByText("—").length).toBeGreaterThan(0);
+    await user.click(screen.getByRole("checkbox", { name: "Select row Nine" }));
+    await user.click(
+      within(screen.getByRole("region", { name: "Bulk actions" })).getByRole("button", { name: /Clear|Cancel/ }),
+    );
+    expect(screen.queryByRole("region", { name: "Bulk actions" })).toBeNull();
+    await user.click(screen.getByRole("checkbox", { name: "Select all rows" }));
+    await user.click(
+      within(screen.getByRole("region", { name: "Bulk actions" })).getByRole("button", { name: "Delete" }),
+    );
+    const dlg = await screen.findByRole("alertdialog");
+    await user.click(
+      within(dlg)
+        .getAllByRole("button")
+        .find((b) => b.textContent !== "Cancel") as HTMLElement,
+    );
+    await waitFor(() => expect(gone.size).toBe(2));
+  });
+
+  it("without post.create there is no create hint", async () => {
+    signIn(["post.update"]);
+    server.use(
+      ...taxonomy(),
+      http.get(api("/posts"), () => page([])),
+    );
+    await renderRouted(<PostsPage filters={{}} onFiltersChange={() => {}} />);
+    expect(await screen.findByText("No posts match these filters.")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "New post" })).toBeNull();
+  });
 });

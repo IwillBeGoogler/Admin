@@ -42,9 +42,9 @@ describe("BansPage", () => {
     const change = vi.fn();
     const { user } = renderUI(<BansPage search={{ kind: "banned", sort: "username" }} onSearchChange={change} />);
     await screen.findByText("@ali");
-    await user.selectOptions(screen.getByLabelText("Kind"), "suspended");
+    await user.selectOptions(document.getElementById("bans-kind") as HTMLSelectElement, "suspended");
     expect(change).toHaveBeenLastCalledWith({ kind: "suspended", sort: "username" });
-    await user.selectOptions(screen.getByLabelText("Kind"), "");
+    await user.selectOptions(document.getElementById("bans-kind") as HTMLSelectElement, "");
     expect(change).toHaveBeenLastCalledWith({ kind: undefined, sort: "username" });
     await user.click(screen.getByRole("button", { name: /Remove filter/ }));
     expect(change).toHaveBeenLastCalledWith({ kind: undefined, sort: "username" });
@@ -77,7 +77,11 @@ describe("BansPage", () => {
     const { user } = renderUI(<BansPage />);
     await user.click(await screen.findByRole("button", { name: /Unban|Lift/ }));
     const dlg = await screen.findByRole("alertdialog");
-    await user.click(within(dlg).getAllByRole("button").find((b) => b.textContent !== "Cancel") as HTMLElement);
+    await user.click(
+      within(dlg)
+        .getAllByRole("button")
+        .find((b) => b.textContent !== "Cancel") as HTMLElement,
+    );
     await waitFor(() => expect(lifted).toBe("ali"));
   });
 
@@ -90,7 +94,11 @@ describe("BansPage", () => {
     const { user } = renderUI(<BansPage />);
     await user.click(await screen.findByRole("button", { name: /Unban|Lift/ }));
     const dlg = await screen.findByRole("alertdialog");
-    await user.click(within(dlg).getAllByRole("button").find((b) => b.textContent !== "Cancel") as HTMLElement);
+    await user.click(
+      within(dlg)
+        .getAllByRole("button")
+        .find((b) => b.textContent !== "Cancel") as HTMLElement,
+    );
     expect(await screen.findByRole("alertdialog")).toBeInTheDocument();
   });
 

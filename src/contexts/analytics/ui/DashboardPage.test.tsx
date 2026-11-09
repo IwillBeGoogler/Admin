@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import { HttpResponse, http } from "msw";
 import { describe, expect, it } from "vitest";
 import { problem, signIn } from "@/test/fixtures";
@@ -30,5 +30,27 @@ describe("DashboardPage", () => {
     );
     renderUI(<DashboardPage />);
     expect(await screen.findByText("You do not have permission to view this.")).toBeInTheDocument();
+  });
+
+  it("stats error and categories error each offer retry; empty categories shows empty state", async () => {
+    signIn();
+    let n = 0;
+    server.use(
+      http.get(api("/admin/stats"), () =>
+        ++n === 1
+          ? problem(500, "stats down")
+          : HttpResponse.json({ data: { posts: 0, comments: 0, likes: 0, categories: 0, users: 1 } }),
+      ),
+      http.get(api("/categories"), () => problem(500, "cats down")),
+      http.get(api("/admin/analytics"), () => HttpResponse.json({ data: { days: 30, mau: 0, funnel: [] } })),
+    );
+    const { user } = renderUI(<DashboardPage />);
+    expect(await screen.findByText(/stats down/)).toBeInTheDocument();
+    await user.click(screen.getAllByRole("button", { name: "Retry" })[0] as HTMLElement);
+    await waitFor(() => expect(n).toBeGreaterThan(1));
+    expect(await screen.findByText(/cats down/)).toBeInTheDocument();
+    server.use(http.get(api("/categories"), () => HttpResponse.json({ data: [] })));
+    await user.click(screen.getByRole("button", { name: "Retry" }));
+    expect(await screen.findByText("No categories yet.")).toBeInTheDocument();
   });
 });

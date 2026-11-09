@@ -113,4 +113,27 @@ describe("CommentsPage", () => {
     await user.click(screen.getByRole("button", { name: "Remove filter Search" }));
     expect(onSearchChange).toHaveBeenCalledWith({ q: undefined });
   });
+
+  it("sort header emits, missing author shows a dash, clear-selection button works", async () => {
+    signIn();
+    server.use(http.get(api("/admin/comments"), () => page([{ ...c, author: "" }])));
+    const change = vi.fn();
+    const { user } = await renderRouted(<CommentsPage search={{ sort: "text" }} onSearchChange={change} />);
+    expect(await screen.findByText("—")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /^Author/ }));
+    expect(change).toHaveBeenLastCalledWith(expect.objectContaining({ sort: expect.any(String) }));
+    await user.click(screen.getByRole("checkbox", { name: "Select row #1" }));
+    const bar = screen.getByRole("region", { name: "Bulk actions" });
+    await user.click(within(bar).getByRole("button", { name: /Clear|Cancel/ }));
+    expect(screen.queryByRole("region", { name: "Bulk actions" })).toBeNull();
+  });
+
+  it("reset with a sort keeps the sort", async () => {
+    signIn();
+    server.use(http.get(api("/admin/comments"), () => page([c])));
+    const change = vi.fn();
+    const { user } = await renderRouted(<CommentsPage search={{ q: "zzz", sort: "text" }} onSearchChange={change} />);
+    await user.click(await screen.findByRole("button", { name: "Clear filters" }));
+    expect(change).toHaveBeenCalledWith({ sort: "text" });
+  });
 });

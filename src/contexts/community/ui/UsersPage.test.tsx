@@ -121,4 +121,96 @@ describe("UsersPage", () => {
     await user.click(go);
     await waitFor(() => expect(body).toEqual({ reason: "x" }));
   });
+
+  it("renders optional columns, sorts, removes the search chip and clears filters", async () => {
+    signIn();
+    server.use(
+      http.get(api("/admin/users"), () =>
+        page([
+          { ...ali, display_name: "Ali K", email: "", email_verified: true, roles: ["editor", "mod"] },
+          { ...ali, id: 2, username: "zed", email_verified: false, roles: undefined },
+        ]),
+      ),
+    );
+    const change = vi.fn();
+    const { user } = renderUI(<UsersPage search={{ q: "a", sort: "email" }} onSearchChange={change} />);
+    expect(await screen.findByText("Ali K")).toBeInTheDocument();
+    expect(screen.getByText("editor, mod")).toBeInTheDocument();
+    expect(screen.getAllByText("—").length).toBeGreaterThan(1);
+    expect(screen.getByText("Yes")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /^Username/ }));
+    expect(change).toHaveBeenLastCalledWith(expect.objectContaining({ sort: expect.any(String) }));
+    await user.click(screen.getByRole("button", { name: /Remove filter/ }));
+    expect(change).toHaveBeenLastCalledWith({ q: undefined, sort: "email" });
+    await user.click(screen.getByRole("button", { name: "Reset all" }));
+    expect(change).toHaveBeenLastCalledWith({ sort: "email" });
+  });
+});
+
+describe("UsersPage reset", () => {
+  it("reset without a sort emits an empty search", async () => {
+    signIn();
+    server.use(http.get(api("/admin/users"), () => page([ali])));
+    const change = vi.fn();
+    const { user } = renderUI(<UsersPage search={{ q: "a" }} onSearchChange={change} />);
+    await user.click(await screen.findByRole("button", { name: "Reset all" }));
+    expect(change).toHaveBeenLastCalledWith({});
+  });
+});
+
+describe("SanctionDialog edges", () => {
+  const sanction = (o: Record<string, unknown> = {}) => ({
+    user_id: 1,
+    username: "ali",
+    kind: "suspended",
+    reason: "spam",
+    until: "2099-01-01T00:00:00Z",
+    actor_id: 3,
+    created_at: "2030-01-01T00:00:00Z",
+    ...o,
+  });
+  const open = async (extra: Parameters<typeof server.use>) => {
+    signIn();
+    server.use(
+      ...extra,
+      http.get(api("/admin/users"), () => page([ali])),
+    );
+    const r = renderUI(<UsersPage search={{}} onSearchChange={() => {}} />);
+    await r.user.click(await screen.findByRole("button", { name: "Ban / suspend: @ali" }));
+    return { ...r, dialog: await screen.findByRole("dialog") };
+  };
+
+  it("shows the active suspension and a failing lift", async () => {
+    const { user, dialog } = await open([
+      http.get(api("/admin/users/ali/ban"), () => HttpResponse.json({ data: sanction() })),
+      http.delete(api("/admin/users/ali/ban"), () => problem(500, "db down")),
+    ]);
+    expect(await within(dialog).findByText("spam")).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Lift ban" }));
+    await waitFor(() => expect(within(dialog).getByRole("button", { name: "Lift ban" })).toBeEnabled());
+  });
+
+  it("4xx on save is shown inline; 5xx goes to a toast; cancel closes", async () => {
+    let n = 0;
+    const { user, dialog } = await open([
+      http.get(api("/admin/users/ali/ban"), () => problem(404, "no ban")),
+      http.put(api("/admin/users/ali/ban"), () =>
+        ++n === 1 ? problem(422, "reason too short") : problem(500, "boom"),
+      ),
+    ]);
+    await user.type(await within(dialog).findByLabelText("Suspended until"), "2099-01-01T10:00");
+    await user.type(within(dialog).getByLabelText("Reason"), "spam");
+    await user.click(within(dialog).getByRole("button", { name: "Ban / suspend" }));
+    expect(await within(dialog).findByText("reason too short")).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Ban / suspend" }));
+    await waitFor(() => expect(n).toBe(2));
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("Escape closes an idle dialog", async () => {
+    const { user } = await open([http.get(api("/admin/users/ali/ban"), () => problem(404, "no ban"))]);
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
 });

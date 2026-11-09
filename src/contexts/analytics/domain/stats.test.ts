@@ -46,4 +46,22 @@ describe("stats", () => {
     expect(shareOf(1, 3)).toBe(33);
     expect(shareOf(1, 0)).toBe(0);
   });
+
+  it("topN breaks count ties by name and drops zero rows", async () => {
+    const { topN } = await import("./stats");
+    expect(
+      topN(
+        [
+          { name: "b", count: 2 },
+          { name: "a", count: 2 },
+          { name: "z", count: 0 },
+        ],
+        5,
+        "Other",
+      ),
+    ).toEqual([
+      { name: "a", count: 2 },
+      { name: "b", count: 2 },
+    ]);
+  });
 });

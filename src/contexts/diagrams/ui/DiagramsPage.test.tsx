@@ -89,4 +89,47 @@ describe("DiagramsPage", () => {
     await renderRouted(<DiagramsPage search={{}} onSearchChange={() => {}} />);
     expect(await screen.findByText("boom")).toBeInTheDocument();
   });
+
+  it("stats error is retryable; thumbnail renders; chips remove; reset keeps sort; sort header emits; templates link for managers", async () => {
+    signIn(["diagrams.read", "templates.manage"]);
+    let n = 0;
+    server.use(
+      http.get(api("/admin/diagrams/stats"), () =>
+        ++n === 1
+          ? HttpResponse.json({ title: "stats down", status: 500 }, { status: 500 })
+          : HttpResponse.json({ data: stats }),
+      ),
+      http.get(api("/admin/diagrams/projects"), () =>
+        page([diagramProject({ thumbnail_url: "https://x.test/t.png", shared: false })]),
+      ),
+    );
+    const change = vi.fn();
+    const { user } = await renderRouted(
+      <DiagramsPage search={{ q: "pay", owner: "ali", sort: "name" }} onSearchChange={change} />,
+    );
+    expect(await screen.findByText("stats down")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Retry" }));
+    expect(await screen.findByText("1.5 KB")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Templates/ })).toBeInTheDocument();
+    expect(document.querySelector("img")).not.toBeNull();
+    await user.click(screen.getByRole("button", { name: "Remove filter Search" }));
+    expect(change).toHaveBeenLastCalledWith({ q: undefined, owner: "ali", sort: "name" });
+    await user.click(screen.getByRole("button", { name: "Remove filter Owner" }));
+    expect(change).toHaveBeenLastCalledWith({ q: "pay", owner: undefined, sort: "name" });
+    await user.click(screen.getByRole("button", { name: "Reset all" }));
+    expect(change).toHaveBeenLastCalledWith({ sort: "name" });
+    await user.click(screen.getByRole("button", { name: /^Files/ }));
+    expect(change).toHaveBeenLastCalledWith(expect.objectContaining({ sort: expect.any(String) }));
+  });
+
+  it("reset without sort emits {}; no manage means no delete button", async () => {
+    signIn(["diagrams.read"]);
+    stub();
+    const change = vi.fn();
+    const { user } = await renderRouted(<DiagramsPage search={{ q: "x" }} onSearchChange={change} />);
+    await screen.findByText("Payments");
+    expect(screen.queryByRole("button", { name: /^Delete:/ })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Reset all" }));
+    expect(change).toHaveBeenLastCalledWith({});
+  });
 });

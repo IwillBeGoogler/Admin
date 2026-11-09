@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { HttpResponse, http } from "msw";
 import { describe, expect, it } from "vitest";
-import { diagramProject, signIn } from "@/test/fixtures";
+import { diagramProject, problem, signIn } from "@/test/fixtures";
 import { renderRouted } from "@/test/render";
 import { api, server } from "@/test/server";
 import { DiagramProjectPage } from "./DiagramProjectPage";
@@ -66,5 +66,72 @@ describe("DiagramProjectPage", () => {
     );
     await renderRouted(<DiagramProjectPage id="p1" />);
     expect(await screen.findByText("project not found")).toBeInTheDocument();
+  });
+
+  it("loading, empty sections, unknown role/kind, expired and never-expiring links", async () => {
+    signIn(["diagrams.read"]);
+    server.use(
+      http.get(api("/admin/diagrams/projects/p1"), () =>
+        HttpResponse.json({
+          data: {
+            ...diagramProject({ files: undefined }),
+            files: [{ id: "f9", name: "Odd", kind: "weird", version: 1, updated_at: "2030-01-01T00:00:00Z" }],
+            members: [{ user_id: "5", username: "bob", role: "godmode" }],
+            shares: [
+              share({ id: "s2", expires_at: "2000-01-01T00:00:00Z" }),
+              share({ id: "s3", role: "alien", expires_at: "2099-01-01T00:00:00Z" }),
+              share({ id: "s4" }),
+            ],
+          },
+        }),
+      ),
+    );
+    await renderRouted(<DiagramProjectPage id="p1" />);
+    expect(screen.getByRole("status")).toBeInTheDocument();
+    expect(await screen.findByText("weird")).toBeInTheDocument();
+    expect(screen.getByText("godmode")).toBeInTheDocument();
+    expect(screen.getByText("alien")).toBeInTheDocument();
+    expect(screen.getByText("Expired")).toBeInTheDocument();
+    expect(screen.getByText("Never")).toBeInTheDocument();
+  });
+
+  it("empty files, members and shares", async () => {
+    signIn(["diagrams.read"]);
+    server.use(
+      http.get(api("/admin/diagrams/projects/p1"), () =>
+        HttpResponse.json({ data: { ...diagramProject({ files: undefined }), files: [], members: [], shares: [] } }),
+      ),
+    );
+    await renderRouted(<DiagramProjectPage id="p1" />);
+    expect(await screen.findByText("No files.")).toBeInTheDocument();
+  });
+
+  it("deleting the project navigates back to the list", async () => {
+    signIn(["diagrams.read", "diagrams.manage"]);
+    let deleted = false;
+    server.use(
+      http.get(api("/admin/diagrams/projects/p1"), () => HttpResponse.json(detail([]))),
+      http.delete(api("/admin/diagrams/projects/p1"), () => {
+        deleted = true;
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    const { user, router } = await renderRouted(<DiagramProjectPage id="p1" />, { path: "/diagrams/p1" });
+    await user.click(await screen.findByRole("button", { name: "Delete" }));
+    await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Delete" }));
+    await waitFor(() => expect(deleted).toBe(true));
+    await waitFor(() => expect(router.state.location.pathname).toBe("/diagrams"));
+  });
+
+  it("failed revoke keeps the dialog open", async () => {
+    signIn(["diagrams.read", "diagrams.manage"]);
+    server.use(
+      http.get(api("/admin/diagrams/projects/p1"), () => HttpResponse.json(detail([share()]))),
+      http.post(api("/admin/diagrams/shares/s1/revoke"), () => problem(500, "no")),
+    );
+    const { user } = await renderRouted(<DiagramProjectPage id="p1" />);
+    await user.click(await screen.findByRole("button", { name: "Revoke: Viewer #s1" }));
+    await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Revoke" }));
+    await waitFor(() => expect(screen.getByRole("alertdialog")).toBeInTheDocument());
   });
 });

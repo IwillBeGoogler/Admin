@@ -152,4 +152,65 @@ describe("ReportsPage", () => {
     await user.click(within(dialog).getByRole("button", { name: "Resolve" }));
     await waitFor(() => expect(body).toEqual({ status: "resolved", remove_content: true }));
   });
+
+  it("diagram target without a project is plain text; user/comment targets; unknown reason; empty reporter", async () => {
+    signIn();
+    server.use(
+      http.get(api("/admin/reports"), () =>
+        page([
+          report({ id: 21, target_type: "diagram", target_file_id: undefined, target_project_id: undefined }),
+          report({ id: 22, target_type: "comment", target_id: 5, reason: "weird_reason", note: "", reporter: "" }),
+          report({ id: 23, target_type: "user", target_id: 6 }),
+        ]),
+      ),
+    );
+    await renderRouted(<ReportsPage search={{ status: "open" }} onSearchChange={() => {}} />);
+    expect(await screen.findByText("weird_reason")).toBeInTheDocument();
+    expect(screen.getByText("Comment #5")).toBeInTheDocument();
+    expect(screen.getByText("User #6")).toBeInTheDocument();
+    expect(screen.getAllByText("—").length).toBeGreaterThan(0);
+  });
+
+  it("status tab keeps the sort; sort header emits; user reports hide the remove-content option", async () => {
+    signIn();
+    server.use(http.get(api("/admin/reports"), () => page([report({ target_type: "user" })])));
+    const change = vi.fn();
+    const { user } = await renderRouted(
+      <ReportsPage search={{ status: "open", sort: "id" }} onSearchChange={change} />,
+    );
+    await user.click(await screen.findByRole("button", { name: "Resolved" }));
+    expect(change).toHaveBeenLastCalledWith({ status: "resolved", sort: "id" });
+    await user.click(screen.getByRole("button", { name: /^Reason/ }));
+    expect(change).toHaveBeenLastCalledWith(expect.objectContaining({ sort: expect.any(String) }));
+    await user.click(screen.getByRole("button", { name: "Resolve #7" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).queryByLabelText("Also remove the reported content")).toBeNull();
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("bulk dismiss, clear selection, and a failed decide shows the error inline", async () => {
+    signIn();
+    server.use(
+      http.get(api("/admin/reports"), () => page([report(), report({ id: 8 })])),
+      http.put(api("/admin/reports/7"), () => problem(500, "db down")),
+      http.put(api("/admin/reports/8"), () => HttpResponse.json({ data: report({ id: 8, status: "dismissed" }) })),
+    );
+    const { user } = await renderRouted(<ReportsPage search={{ status: "open" }} onSearchChange={() => {}} />);
+    await user.click(await screen.findByRole("checkbox", { name: "Select row #8" }));
+    const bar = screen.getByRole("region", { name: "Bulk actions" });
+    await user.click(within(bar).getByRole("button", { name: "Dismiss" }));
+    const confirm = await screen.findByRole("alertdialog");
+    await user.click(within(confirm).getByRole("button", { name: "Dismiss" }));
+    expect(await screen.findByText("1 dismissed")).toBeInTheDocument();
+    await user.click(await screen.findByRole("checkbox", { name: "Select row #7" }));
+    await user.click(
+      within(screen.getByRole("region", { name: "Bulk actions" })).getByRole("button", { name: /Clear|Cancel/ }),
+    );
+    expect(screen.queryByRole("region", { name: "Bulk actions" })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Dismiss #7" }));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Dismiss" }));
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent("db down");
+  });
 });

@@ -1,7 +1,7 @@
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import { HttpResponse, http } from "msw";
 import { describe, expect, it } from "vitest";
-import { signIn } from "@/test/fixtures";
+import { problem, signIn } from "@/test/fixtures";
 import { renderUI } from "@/test/render";
 import { api, server } from "@/test/server";
 import { ProductAnalytics } from "./ProductAnalytics";
@@ -49,5 +49,29 @@ describe("ProductAnalytics", () => {
     server.use(http.get(api("/admin/analytics"), () => HttpResponse.json({ data: { days: 30, mau: 0, funnel: [] } })));
     renderUI(<ProductAnalytics />);
     expect(await screen.findByText(/No data yet/)).toBeInTheDocument();
+  });
+
+  it("period change refetches; errors can be retried", async () => {
+    signIn();
+    localStorage.setItem("admin.locale", "en");
+    const seen: string[] = [];
+    let fail = true;
+    server.use(
+      http.get(api("/admin/analytics"), ({ request }) => {
+        seen.push(new URL(request.url).searchParams.get("days") ?? "");
+        return fail
+          ? problem(500, "analytics down")
+          : HttpResponse.json({
+              data: { days: 7, mau: 1, funnel: [{ step: "visit", count: 1 }], dau: [], signups: [], top_paths: [] },
+            });
+      }),
+    );
+    const { user } = renderUI(<ProductAnalytics />);
+    expect(await screen.findByText(/analytics down/)).toBeInTheDocument();
+    fail = false;
+    await user.click(screen.getByRole("button", { name: "Retry" }));
+    await waitFor(() => expect(screen.queryByText(/analytics down/)).toBeNull());
+    await user.selectOptions(screen.getByRole("combobox"), "7");
+    await waitFor(() => expect(seen).toContain("7"));
   });
 });

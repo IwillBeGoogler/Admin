@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { HttpResponse, http } from "msw";
 import { describe, expect, it, vi } from "vitest";
-import { feedback, page, signIn } from "@/test/fixtures";
+import { feedback, page, problem, signIn } from "@/test/fixtures";
 import { renderRouted } from "@/test/render";
 import { api, server } from "@/test/server";
 import { FeedbackPage } from "./FeedbackPage";
@@ -61,5 +61,38 @@ describe("FeedbackPage", () => {
     expect(onSearchChange).toHaveBeenCalledWith({ status: "resolved", kind: "all" });
     await user.click(screen.getByRole("button", { name: "Idea" }));
     expect(onSearchChange).toHaveBeenCalledWith({ status: "open", kind: "idea" });
+  });
+
+  it("empty filtered list clears filters; sort emits; named sender and unknown kind render", async () => {
+    signIn();
+    server.use(http.get(api("/admin/feedback"), () => page([])));
+    const change = vi.fn();
+    const { user } = await renderRouted(
+      <FeedbackPage search={{ status: "resolved", kind: "all" }} onSearchChange={change} />,
+    );
+    await user.click(await screen.findByRole("button", { name: "Clear filters" }));
+    expect(change).toHaveBeenLastCalledWith({ status: "open", kind: "all" });
+  });
+
+  it("rows with a sender and an unknown kind; sort header; failed decision shows error", async () => {
+    signIn();
+    server.use(
+      http.get(api("/admin/feedback"), () =>
+        page([feedback({ username: "ali", kind: "weird", error_stack: "", contact_email: "", page_url: "" })]),
+      ),
+      http.put(api("/admin/feedback/3"), () => problem(500, "db down")),
+    );
+    const change = vi.fn();
+    const { user } = await renderRouted(<FeedbackPage search={search} onSearchChange={change} />);
+    expect(await screen.findByText("@ali")).toBeInTheDocument();
+    expect(screen.getByText("weird")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /^#/ }));
+    expect(change).toHaveBeenLastCalledWith(expect.objectContaining({ sort: expect.any(String) }));
+    await user.click(screen.getByRole("button", { name: "View #3" }));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Dismiss" }));
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent("db down");
+    await user.click(within(dialog).getAllByRole("button", { name: "Close" })[0] as HTMLElement);
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 });
