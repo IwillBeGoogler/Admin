@@ -56,7 +56,8 @@ describe("LabelsPage", () => {
       }),
     );
     const { user } = await renderRouted(<LabelsPage />);
-    await user.type(await screen.findByLabelText("New label"), "Hot");
+    await user.click(await screen.findByRole("button", { name: "New label" }));
+    await user.type(await screen.findByLabelText("Name"), "Hot");
     const color = screen.getByRole("textbox", { name: "Color" });
     await user.clear(color);
     await user.type(color, "red");
@@ -83,6 +84,7 @@ describe("LabelsPage edges", () => {
     );
     const { user } = await renderRouted(<LabelsPage />);
     await screen.findByRole("link", { name: "Hot" });
+    await user.click(screen.getByRole("button", { name: "New label" }));
     const picker = document.querySelector("input[type=color]") as HTMLInputElement;
     fireEvent.change(picker, { target: { value: "#00ff00" } });
     expect(screen.getByRole("textbox", { name: "Color" })).toHaveValue("#00ff00");
@@ -92,9 +94,10 @@ describe("LabelsPage edges", () => {
     expect(picker.value).toBe("#000000");
     await user.clear(text);
     await user.type(text, "#00ff00");
-    await user.type(screen.getByLabelText("New label"), "Hot");
+    await user.type(screen.getByLabelText("Name"), "Hot");
     await user.click(screen.getByRole("button", { name: "Create" }));
     expect(await screen.findByText(/label exists/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Close" }));
     await user.click(screen.getByRole("button", { name: "Delete: Hot" }));
     await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Delete label" }));
     await waitFor(() => expect(screen.queryByRole("link", { name: "Hot" })).toBeNull());
