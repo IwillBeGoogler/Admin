@@ -112,3 +112,37 @@ describe("policy roles", () => {
     expect(policySchema.parse({ id: "1", name: "n", resource: "*", action: "*", effect: "allow" }).roles).toEqual([]);
   });
 });
+
+describe("policyTemplates and describeGroup", () => {
+  it("templates deny app.access with conditions", async () => {
+    const { policyTemplates } = await import("./access");
+    const w = policyTemplates.workingHours();
+    expect(w).toMatchObject({ resource: "app", action: "access", effect: "deny", match: "or" });
+    expect(w.conditions).toHaveLength(2);
+    const ip = policyTemplates.ipAllowlist();
+    expect(ip).toMatchObject({ effect: "deny", match: "and" });
+    expect(ip.conditions?.[0]?.operator).toBe("not_in");
+  });
+
+  it("describeGroup summarises nested and negated groups", async () => {
+    const { describeGroup } = await import("./access");
+    expect(describeGroup(null)).toBe("");
+    const g = {
+      operator: "and" as const,
+      negate: true,
+      conditions: [{ field: "a", operator: "gte" as const, value: ["1"] }],
+      groups: [
+        {
+          operator: "or" as const,
+          negate: false,
+          conditions: [
+            { field: "b", operator: "in" as const, value: ["x", "y"] },
+            { field: "c", operator: "ne" as const, value: ["z"] },
+          ],
+          groups: [],
+        },
+      ],
+    };
+    expect(describeGroup(g)).toBe("NOT (a ≥ 1 AND (b in x, y OR c ≠ z))");
+  });
+});

@@ -28,3 +28,15 @@ describe("product analytics", () => {
     expect(readTime(125.4)).toBe("2m 05s");
   });
 });
+
+describe("product analytics edge cases", () => {
+  it("funnelRates treats missing steps as zero and avoids dividing by zero", () => {
+    const rates = funnelRates([{ step: "signup", count: 5 }] as never);
+    expect(rates.map((r) => r.count)).toEqual([0, 0, 5, 0]);
+    expect(rates.every((r) => r.rate === 0)).toBe(true);
+  });
+  it("stickiness is 0 with no MAU or no DAU", () => {
+    expect(stickiness({ mau: 0, dau: [] } as never)).toBe(0);
+    expect(stickiness({ mau: 10, dau: [] } as never)).toBe(0);
+  });
+});

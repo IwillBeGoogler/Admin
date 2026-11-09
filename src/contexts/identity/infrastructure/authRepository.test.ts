@@ -77,4 +77,16 @@ describe("authRepository", () => {
     server.use(http.post(api("/auth/logout"), () => HttpResponse.error()));
     await expect(authRepository.logout()).resolves.toBeUndefined();
   });
+
+  it("currentAdmin tolerates a guard response without roles", async () => {
+    tokens.set({ token: "t", expiresAt: "x" });
+    server.use(
+      http.get(api("/me"), () => HttpResponse.json({ data: user })),
+      http.get(api("/guard/auth/me"), () => HttpResponse.json({ data: {} })),
+    );
+    const me = await authRepository.currentAdmin();
+    expect(me.roles).toEqual([]);
+    expect(me.permissions.all).toBe(false);
+    tokens.set(null);
+  });
 });

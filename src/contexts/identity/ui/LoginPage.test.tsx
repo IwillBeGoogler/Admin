@@ -61,3 +61,24 @@ describe("LoginPage", () => {
     tokens.set(null);
   });
 });
+
+describe("session hooks and RequirePermission", () => {
+  it("renders fallback or forbidden state and false permissions while loading", async () => {
+    const { RequirePermission } = await import("./RequirePermission");
+    const { screen: s } = await import("@testing-library/react");
+    const { unmount } = renderUI(
+      <RequirePermission anyOf={["post.create"]} fallback={<p>nope</p>}>
+        <p>secret</p>
+      </RequirePermission>,
+    );
+    expect(s.getByText("nope")).toBeInTheDocument();
+    expect(s.queryByText("secret")).toBeNull();
+    unmount();
+    renderUI(
+      <RequirePermission anyOf={["post.create"]}>
+        <p>secret</p>
+      </RequirePermission>,
+    );
+    expect(s.getByRole("alert")).toBeInTheDocument();
+  });
+});

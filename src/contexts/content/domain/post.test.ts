@@ -80,3 +80,67 @@ describe("post form rules", () => {
     expect(postToForm(p)).toMatchObject({ title: "T", tags: "x", labelIds: [4], categoryId: 0, status: "published" });
   });
 });
+
+describe("post form edge rules", () => {
+  const schema = postFormSchema(now);
+  const issues = (v: object) => schema.safeParse({ ...valid, ...v }).error?.issues.map((i) => i.message) ?? [];
+  it("flags long subtitle/body/title and bad urls and too many tags/labels", () => {
+    expect(issues({ title: "x".repeat(201) })).toContain("posts.titleTooLong");
+    expect(issues({ subtitle: "x".repeat(1000) })).toContain("posts.subtitleTooLong");
+    expect(issues({ body: "x".repeat(300_000) })).toContain("posts.bodyTooLong");
+    expect(issues({ coverUrl: "ftp://x" })).toContain("posts.badUrl");
+    expect(issues({ coverUrl: "/api/uploads/a.png" })).toEqual([]);
+    expect(issues({ canonicalUrl: "nope" })).toContain("posts.badUrl");
+    expect(issues({ canonicalUrl: `https://x.com/${"a".repeat(2000)}` })).toContain("posts.badUrl");
+    expect(issues({ tags: Array.from({ length: 40 }, (_, i) => `t${i}`).join(",") })).toContain("posts.tooManyTags");
+    expect(issues({ labelIds: Array.from({ length: 40 }, (_, i) => i + 1) })).toContain("posts.tooManyLabels");
+  });
+  it("scheduled posts need a future time", () => {
+    expect(issues({ status: "scheduled", publishAt: "" })).toContain("posts.publishAtRequired");
+    expect(issues({ status: "scheduled", publishAt: "2020-01-01T00:00" })).toContain("posts.publishAtFuture");
+    expect(issues({ status: "scheduled", publishAt: "2031-01-01T00:00" })).toEqual([]);
+  });
+  it("toDraftPayload trims, dedups sorted labels, nulls publish_at unless scheduled", () => {
+    const p = toDraftPayload({ ...valid, title: " T ", subtitle: " s ", labelIds: [3, 1, 3], tags: "a, b" });
+    expect(p).toMatchObject({ title: "T", subtitle: "s", label_ids: [1, 3], tags: ["a", "b"], publish_at: null });
+    const s = toDraftPayload({ ...valid, status: "scheduled", publishAt: "2031-01-01T00:00" });
+    expect(s.publish_at).toMatch(/^20(30-12-31|31-01-01)/);
+    const bad = toDraftPayload({ ...valid, status: "scheduled", publishAt: "" });
+    expect(bad.publish_at).toBeNull();
+  });
+  it("postToForm tolerates missing tags/labels and unknown status", () => {
+    const f = postToForm({ ...postSchema.parse(basePost()), tags: undefined, labels: undefined, status: "weird" } as never);
+    expect(f.tags).toBe("");
+    expect(f.labelIds).toEqual([]);
+    expect(f.status).toBe("published");
+  });
+});
+
+function basePost() {
+  return {
+    id: 1,
+    title: "t",
+    subtitle: "",
+    slug: "t",
+    status: "published",
+    body: "b",
+    reading_time: 1,
+    author: "a",
+    category_id: 1,
+    publication_id: 0,
+    user_id: 1,
+    cover_url: "",
+    canonical_url: "",
+    tags: [],
+    labels: [],
+    likes: 0,
+    claps: 0,
+    comments_count: 0,
+    views: 0,
+    liked: false,
+    my_claps: 0,
+    bookmarked: false,
+    created_at: "2026-10-05T14:59:34Z",
+    updated_at: "2026-10-05T14:59:34Z",
+  };
+}

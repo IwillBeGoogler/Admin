@@ -13,8 +13,8 @@ export default defineConfig({
     css: false,
     coverage: {
       provider: "v8",
-      include: ["src/**/domain/**", "src/shared/**"],
-      exclude: ["**/*.test.*", "src/shared/ui/**", "src/shared/api/openapi.d.ts"],
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: ["**/*.test.*", "src/test/**", "src/**/*.d.ts", "src/routeTree.gen.ts", "src/main.tsx"],
     },
   },
 });

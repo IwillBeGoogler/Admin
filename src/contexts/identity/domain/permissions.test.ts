@@ -38,3 +38,11 @@ describe("permissions", () => {
     expect(isAdmin(permissionsFromRoles([]))).toBe(false);
   });
 });
+
+describe("permissionsFromRoles edge cases", () => {
+  it("tolerates roles without a permissions list", () => {
+    const p = permissionsFromRoles([{ wildcard: false, permissions: undefined } as never]);
+    expect(p.codes.size).toBe(0);
+    expect(can(p, "post.read")).toBe(false);
+  });
+});
