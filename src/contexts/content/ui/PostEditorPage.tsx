@@ -26,6 +26,7 @@ import {
   useRevisions,
   useSavePost,
 } from "../application/hooks";
+import { insertCodeGroup } from "../domain/codeGroup";
 import {
   emptyPostForm,
   type Post,
@@ -225,7 +226,33 @@ function EditorForm({ post, onSaved }: { post: Post | undefined; onSaved: (id: n
             </Field>
           </div>
           <Field label={t("posts.body")} error={msg(e.body?.message)}>
-            {(a) => <Textarea {...a} rows={16} className="font-mono" {...form.register("body")} />}
+            {(a) => (
+              <>
+                <Textarea {...a} rows={16} className="font-mono" {...form.register("body")} />
+                <div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const el = document.getElementById(a.id) as HTMLTextAreaElement | null;
+                      const r = insertCodeGroup(
+                        form.getValues("body"),
+                        el?.selectionStart ?? form.getValues("body").length,
+                        `g${Math.random().toString(36).slice(2, 7)}`,
+                      );
+                      form.setValue("body", r.body, { shouldDirty: true, shouldValidate: true });
+                      requestAnimationFrame(() => {
+                        el?.focus();
+                        el?.setSelectionRange(r.caret, r.caret);
+                      });
+                    }}
+                  >
+                    {t("posts.codeGroup")}
+                  </Button>
+                </div>
+              </>
+            )}
           </Field>
           {e.root?.message ? (
             <p role="alert" className="text-sm text-destructive">

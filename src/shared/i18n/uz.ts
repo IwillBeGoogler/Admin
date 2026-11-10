@@ -152,6 +152,7 @@ export const uz: Dict = {
     titleField: "Sarlavha",
     subtitle: "Kichik sarlavha",
     body: "Matn (Markdown)",
+    codeGroup: "Bir nechta tilda kod qo'shish",
     tags: "Teglar (vergul bilan)",
     coverUrl: "Muqova rasmi URL",
     canonicalUrl: "Kanonik URL",

@@ -150,6 +150,7 @@ export const en = {
     titleField: "Title",
     subtitle: "Subtitle",
     body: "Body (Markdown)",
+    codeGroup: "Insert code in several languages",
     tags: "Tags (comma separated)",
     coverUrl: "Cover image URL",
     canonicalUrl: "Canonical URL",

@@ -152,6 +152,7 @@ export const ru: Dict = {
     titleField: "Заголовок",
     subtitle: "Подзаголовок",
     body: "Текст (Markdown)",
+    codeGroup: "Вставить код на нескольких языках",
     tags: "Теги (через запятую)",
     coverUrl: "URL обложки",
     canonicalUrl: "Канонический URL",
