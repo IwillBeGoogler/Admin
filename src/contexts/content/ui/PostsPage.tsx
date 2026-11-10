@@ -22,6 +22,7 @@ import { SearchInput } from "@/shared/ui/search-input";
 import { PageHeader } from "@/shared/ui/states";
 import { useCategories, useDeletePost, useLabels, usePosts } from "../application/hooks";
 import { type Post, type PostFilters, type PostSource, postSources } from "../domain/post";
+import { NewPostDialog } from "./PostEditorPage";
 import { StatusBadge } from "./StatusBadge";
 
 const col = createColumnHelper<Features, Post>();
@@ -48,6 +49,7 @@ export function PostsPage({
   const [pending, setPending] = useState<Post | null>(null);
   const [selected, setSelected] = useRowSelection(query);
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
   const runBulk = useBulkRunner<Post>((p) => String(p.id), setSelected);
   const own = filters.source === "draft" || filters.source === "scheduled";
   const catName = new Map((categories.data ?? []).map((c) => [c.id, c.name]));
@@ -55,7 +57,7 @@ export function PostsPage({
   /** Same rule as the row's delete button. */
   const canDelete = (p: Post) => can("post.delete") || p.user_id === userId;
 
-  useHotkeys({ [key("newItem")]: can("post.create") ? () => void navigate({ to: "/posts/new" }) : null });
+  useHotkeys({ [key("newItem")]: can("post.create") ? () => setCreating(true) : null });
 
   const columns: Columns<Post> = [
     col.accessor("title", {
@@ -167,15 +169,21 @@ export function PostsPage({
 
   return (
     <>
+      <NewPostDialog
+        open={creating}
+        onOpenChange={setCreating}
+        onSaved={(id) => {
+          setCreating(false);
+          void navigate({ to: "/posts/$postId", params: { postId: id } });
+        }}
+      />
       <PageHeader
         title={t("posts.title")}
         actions={
           <Can code="post.create">
-            <Button asChild>
-              <Link to="/posts/new">
-                <PlusIcon aria-hidden />
-                {t("posts.new")}
-              </Link>
+            <Button onClick={() => setCreating(true)}>
+              <PlusIcon aria-hidden />
+              {t("posts.new")}
             </Button>
           </Can>
         }
@@ -189,11 +197,9 @@ export function PostsPage({
           title: t("posts.empty"),
           hint: can("post.create") ? t("confirm.createFirstPost") : undefined,
           action: can("post.create") ? (
-            <Button asChild size="sm">
-              <Link to="/posts/new">
-                <PlusIcon aria-hidden />
-                {t("posts.new")}
-              </Link>
+            <Button size="sm" onClick={() => setCreating(true)}>
+              <PlusIcon aria-hidden />
+              {t("posts.new")}
             </Button>
           ) : undefined,
         }}

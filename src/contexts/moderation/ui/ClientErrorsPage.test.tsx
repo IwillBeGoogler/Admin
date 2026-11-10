@@ -1,5 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { HttpResponse, http } from "msw";
+import { toast } from "sonner";
 import { describe, expect, it, vi } from "vitest";
 import { clientError, page, problem, signIn } from "@/test/fixtures";
 import { renderRouted } from "@/test/render";
@@ -103,6 +104,39 @@ describe("ClientErrorsPage", () => {
     await user.click(within(dialog).getByRole("button", { name: "Resolve" }));
     expect(await within(dialog).findByRole("alert")).toHaveTextContent("db down");
     await user.click(within(dialog).getAllByRole("button", { name: "Close" })[0] as HTMLElement);
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("the error toast Retry action repeats the failed decision", async () => {
+    signIn();
+    const err = vi.spyOn(toast, "error").mockReturnValue(1);
+    let calls = 0;
+    server.use(
+      http.get(api("/admin/client-errors"), () => page([clientError()])),
+      http.put(api("/admin/client-errors/5"), () => {
+        calls += 1;
+        return calls === 1 ? problem(500, "db down") : HttpResponse.json({ data: clientError() });
+      }),
+    );
+    const { user } = await renderRouted(<ClientErrorsPage search={search} onSearchChange={() => {}} />);
+    await user.click(await screen.findByRole("button", { name: "View #5" }));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Resolve" }));
+    await waitFor(() => expect(err).toHaveBeenCalled());
+    const action = (err.mock.calls[0] as unknown as [string, { action: { onClick: () => void } }])[1].action;
+    action.onClick();
+    await waitFor(() => expect(calls).toBe(2));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    err.mockRestore();
+  });
+
+  it("Escape closes the decision dialog", async () => {
+    signIn();
+    server.use(http.get(api("/admin/client-errors"), () => page([clientError()])));
+    const { user } = await renderRouted(<ClientErrorsPage search={search} onSearchChange={() => {}} />);
+    await user.click(await screen.findByRole("button", { name: "View #5" }));
+    await screen.findByRole("dialog");
+    await user.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 });

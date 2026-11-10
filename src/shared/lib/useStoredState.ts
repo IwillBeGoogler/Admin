@@ -20,6 +20,7 @@ export function useStoredState<T extends string>(key: string, fallback: T, allow
     setState(v);
     if (syncKey) settingsSync.push(syncKey, v);
   };
+  // biome-ignore lint/correctness/useExhaustiveDependencies: allowed is a static list
   useEffect(() => {
     if (!syncKey) return;
     return settingsSync.register({
@@ -33,7 +34,6 @@ export function useStoredState<T extends string>(key: string, fallback: T, allow
       },
       apply: (v) => typeof v === "string" && (allowed as readonly string[]).includes(v) && setState(v as T),
     });
-    // biome-ignore lint/correctness/useExhaustiveDependencies: allowed is a static list
   }, [key, syncKey]);
   useEffect(() => {
     try {

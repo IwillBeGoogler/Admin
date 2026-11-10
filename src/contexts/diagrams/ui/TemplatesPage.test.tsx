@@ -164,4 +164,14 @@ describe("TemplatesPage", () => {
     await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Delete" }));
     await waitFor(() => expect(screen.getByRole("alertdialog")).toBeInTheDocument());
   });
+
+  it("Escape closes the editor dialog", async () => {
+    signIn(["templates.manage"]);
+    server.use(http.get(api("/admin/diagrams/templates"), () => page([diagramTemplate()])));
+    const { user } = await renderRouted(<TemplatesPage />);
+    await user.click(await screen.findByRole("button", { name: "New template" }));
+    await screen.findByRole("dialog");
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
 });

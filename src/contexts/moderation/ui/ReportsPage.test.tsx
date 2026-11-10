@@ -1,5 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { HttpResponse, http } from "msw";
+import { toast } from "sonner";
 import { describe, expect, it, vi } from "vitest";
 import { page, problem, report, signIn } from "@/test/fixtures";
 import { renderRouted } from "@/test/render";
@@ -212,5 +213,38 @@ describe("ReportsPage", () => {
     const dialog = await screen.findByRole("dialog");
     await user.click(within(dialog).getByRole("button", { name: "Dismiss" }));
     expect(await within(dialog).findByRole("alert")).toHaveTextContent("db down");
+  });
+
+  it("the error toast Retry action repeats the failed decision", async () => {
+    signIn();
+    const err = vi.spyOn(toast, "error").mockReturnValue(1);
+    let calls = 0;
+    server.use(
+      http.get(api("/admin/reports"), () => page([report()])),
+      http.put(api("/admin/reports/7"), () => {
+        calls += 1;
+        return calls === 1 ? problem(500, "db down") : HttpResponse.json({ data: report() });
+      }),
+    );
+    const { user } = await renderRouted(<ReportsPage search={{ status: "open" }} onSearchChange={() => {}} />);
+    await user.click(await screen.findByRole("button", { name: "Dismiss #7" }));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Dismiss" }));
+    await waitFor(() => expect(err).toHaveBeenCalled());
+    const action = (err.mock.calls[0] as unknown as [string, { action: { onClick: () => void } }])[1].action;
+    action.onClick();
+    await waitFor(() => expect(calls).toBe(2));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    err.mockRestore();
+  });
+
+  it("Escape closes the decision dialog", async () => {
+    signIn();
+    server.use(http.get(api("/admin/reports"), () => page([report()])));
+    const { user } = await renderRouted(<ReportsPage search={{ status: "open" }} onSearchChange={() => {}} />);
+    await user.click(await screen.findByRole("button", { name: "Dismiss #7" }));
+    await screen.findByRole("dialog");
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 });

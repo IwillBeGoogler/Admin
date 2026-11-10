@@ -23,7 +23,8 @@ describe("CategoriesPage", () => {
       }),
     );
     const { user } = await renderRouted(<CategoriesPage />);
-    await user.type(await screen.findByLabelText("New category"), "Go");
+    await user.click(await screen.findByRole("button", { name: "New category" }));
+    await user.type(await screen.findByLabelText("Name"), "Go");
     await user.click(screen.getByRole("button", { name: "Create" }));
     expect(await screen.findByRole("link", { name: "Go" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Delete: Docker" }));
@@ -38,7 +39,8 @@ describe("CategoriesPage", () => {
       http.post(api("/categories"), () => problem(409, "category exists")),
     );
     const { user } = await renderRouted(<CategoriesPage />);
-    await user.type(await screen.findByLabelText("New category"), "Go");
+    await user.click(await screen.findByRole("button", { name: "New category" }));
+    await user.type(await screen.findByLabelText("Name"), "Go");
     await user.click(screen.getByRole("button", { name: "Create" }));
     expect(await screen.findByText(/category exists \(request req-1\)/)).toBeInTheDocument();
   });
@@ -107,6 +109,7 @@ describe("LabelsPage edges", () => {
     signIn();
     server.use(http.get(api("/categories"), () => HttpResponse.json({ data: [] })));
     const { user } = await renderRouted(<CategoriesPage />);
+    await user.click(await screen.findByRole("button", { name: "New category" }));
     await user.click(await screen.findByRole("button", { name: "Create" }));
     expect(await screen.findByRole("alert")).toBeInTheDocument();
   });

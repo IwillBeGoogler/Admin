@@ -72,6 +72,27 @@ export function PostEditorPage({ postId, onSaved }: { postId?: number; onSaved: 
   );
 }
 
+/** Create flow as a modal; editing an existing post stays on its own page. */
+export function NewPostDialog({
+  open,
+  onOpenChange,
+  onSaved,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  onSaved: (id: number) => void;
+}) {
+  const { t } = useI18n();
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl" closeLabel={t("common.close")} aria-describedby={undefined}>
+        <DialogTitle>{t("posts.new")}</DialogTitle>
+        {open ? <EditorForm post={undefined} onSaved={onSaved} /> : null}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function EditorForm({ post, onSaved }: { post: Post | undefined; onSaved: (id: number) => void }) {
   const { t } = useI18n();
   const categories = useCategories();

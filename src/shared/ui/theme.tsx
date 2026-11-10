@@ -1,5 +1,5 @@
-import { settingsSync } from "@/shared/settingsSync";
 import { createContext, type ReactNode, use, useEffect, useState } from "react";
+import { settingsSync } from "@/shared/settingsSync";
 
 export type Theme = "light" | "dark" | "system";
 const KEY = "admin.theme";

@@ -146,3 +146,30 @@ describe("policyTemplates and describeGroup", () => {
     expect(describeGroup(g)).toBe("NOT (a ≥ 1 AND (b in x, y OR c ≠ z))");
   });
 });
+
+describe("policySchema defaults", () => {
+  const base = { id: "p", name: "n", resource: "r", action: "a", effect: "allow" as const };
+
+  it("defaults nullish roles, priority, enabled and root", () => {
+    const p = policySchema.parse({ ...base, roles: null });
+    expect(p).toMatchObject({ roles: [], priority: 0, enabled: true, root: null });
+  });
+
+  it("defaults nullish condition lists and values in nested groups", () => {
+    const p = policySchema.parse({
+      ...base,
+      root: {
+        operator: "or",
+        conditions: [{ field: "f", operator: "eq", value: null }],
+        groups: [{ operator: "and", conditions: null, groups: null }],
+      },
+    });
+    expect(p.root?.negate).toBe(false);
+    expect(p.root?.conditions[0]?.value).toEqual([]);
+    expect(p.root?.groups[0]).toMatchObject({ conditions: [], groups: [], negate: false });
+  });
+
+  it("keeps provided roles", () => {
+    expect(policySchema.parse({ ...base, roles: ["admin"] }).roles).toEqual(["admin"]);
+  });
+});

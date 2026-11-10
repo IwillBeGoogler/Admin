@@ -74,4 +74,37 @@ describe("ProductAnalytics", () => {
     await user.selectOptions(screen.getByRole("combobox"), "7");
     await waitFor(() => expect(seen).toContain("7"));
   });
+
+  it("all-zero funnel with no active users is empty; zero top step, missing signups and blank path still render", async () => {
+    signIn();
+    localStorage.setItem("admin.locale", "en");
+    let body: Record<string, unknown> = {
+      data: { days: 30, mau: 0, funnel: [{ step: "visit", count: 0 }], dau: [], signups: [], top_paths: [] },
+    };
+    server.use(http.get(api("/admin/analytics"), () => HttpResponse.json(body)));
+    const first = renderUI(<ProductAnalytics />);
+    expect(await screen.findByText(/No data yet/)).toBeInTheDocument();
+    first.unmount();
+    body = {
+      data: {
+        days: 30,
+        mau: 3,
+        wau: 2,
+        funnel: [
+          { step: "visit", count: 0 },
+          { step: "signup", count: 0 },
+        ],
+        dau: [
+          { day: "2026-10-06", count: 1 },
+          { day: "2026-10-07", count: 2 },
+        ],
+        signups: [{ day: "2026-10-06", count: 1 }],
+        top_paths: [{ key: "", count: 4 }],
+        languages: [],
+      },
+    };
+    renderUI(<ProductAnalytics />);
+    expect(await screen.findByText("4")).toBeInTheDocument();
+    expect(screen.queryByText(/No data yet/)).toBeNull();
+  });
 });

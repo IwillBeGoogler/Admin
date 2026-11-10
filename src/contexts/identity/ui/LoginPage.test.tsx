@@ -60,6 +60,43 @@ describe("LoginPage", () => {
     expect(tokens.get()?.token).toBe("tok2");
     tokens.set(null);
   });
+
+  it("shows a loading label while signing in", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((r) => {
+      release = r;
+    });
+    server.use(
+      http.post(api("/auth/login"), async () => {
+        await gate;
+        return problem(401, "invalid login or password");
+      }),
+    );
+    const { user } = renderUI(<LoginPage onSignedIn={() => {}} />);
+    await user.type(screen.getByLabelText("Username or email"), "x");
+    await user.type(screen.getByLabelText("Password"), "y");
+    await user.click(screen.getByRole("button", { name: "Sign in" }));
+    expect(await screen.findByRole("button", { name: "Loading…" })).toBeDisabled();
+    release();
+    expect(await screen.findByRole("alert")).toHaveTextContent("invalid login or password");
+  });
+
+  it("2FA step validates an empty code and shows a rejected code", async () => {
+    server.use(
+      http.post(api("/auth/login"), () => HttpResponse.json({ data: { mfa_required: true, mfa_token: "m1" } })),
+      http.post(api("/auth/login/2fa"), () => problem(401, "bad code")),
+    );
+    const { user } = renderUI(<LoginPage onSignedIn={() => {}} />);
+    await user.type(screen.getByLabelText("Username or email"), "admin");
+    await user.type(screen.getByLabelText("Password"), "secret");
+    await user.click(screen.getByRole("button", { name: "Sign in" }));
+    await screen.findByText("Two-factor authentication");
+    await user.click(screen.getByRole("button", { name: "Verify" }));
+    expect(await screen.findByText("Required")).toBeInTheDocument();
+    await user.type(screen.getByLabelText("Code"), "123456");
+    await user.click(screen.getByRole("button", { name: "Verify" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("bad code");
+  });
 });
 
 describe("session hooks and RequirePermission", () => {

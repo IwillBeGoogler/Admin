@@ -9,7 +9,6 @@ import { formatNumber } from "@/shared/lib/format";
 import { notifySuccess } from "@/shared/lib/notify";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
-import { Card, CardContent } from "@/shared/ui/card";
 import { ConfirmDialog, Dialog, DialogContent, DialogTitle } from "@/shared/ui/dialog";
 import { Field } from "@/shared/ui/field";
 import { Input } from "@/shared/ui/input";
@@ -38,6 +37,7 @@ export function CategoriesPage() {
   const create = useCreateCategory();
   const del = useDeleteCategory();
   const confirm = useDeleteConfirm<{ id: number; name: string }>();
+  const [creating, setCreating] = useState(false);
   const form = useForm<CategoryInput>({ resolver: zodResolver(categoryInputSchema), defaultValues: { name: "" } });
   const err = form.formState.errors.name?.message;
   const submit = form.handleSubmit((v) =>
@@ -45,27 +45,43 @@ export function CategoriesPage() {
       onSuccess: () => {
         notifySuccess(t("common.saved"));
         form.reset();
+        setCreating(false);
       },
       onError: (e) => form.setError("name", { message: errorMessage(e) }),
     }),
   );
   return (
     <>
-      <PageHeader title={t("categories.title")} />
-      <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-        <Card className="h-fit">
-          <CardContent className="pt-5">
-            <form onSubmit={submit} noValidate className="grid gap-3">
-              <Field label={t("categories.new")} error={err && t(err as MessageKey)}>
-                {(a) => <Input {...a} {...form.register("name")} />}
-              </Field>
-              <Button type="submit" disabled={create.isPending}>
-                <PlusIcon aria-hidden />
-                {t("common.create")}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+      <PageHeader
+        title={t("categories.title")}
+        actions={
+          <Button onClick={() => setCreating(true)}>
+            <PlusIcon aria-hidden />
+            {t("categories.new")}
+          </Button>
+        }
+      />
+      <Dialog
+        open={creating}
+        onOpenChange={(o) => {
+          setCreating(o);
+          if (!o) form.clearErrors();
+        }}
+      >
+        <DialogContent closeLabel={t("common.close")} locked={create.isPending} aria-describedby={undefined}>
+          <DialogTitle>{t("categories.new")}</DialogTitle>
+          <form onSubmit={submit} noValidate className="grid gap-3">
+            <Field label={t("common.name")} error={err && t(err as MessageKey)}>
+              {(a) => <Input {...a} {...form.register("name")} autoFocus />}
+            </Field>
+            <Button type="submit" disabled={create.isPending}>
+              <PlusIcon aria-hidden />
+              {t("common.create")}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+      <div className="grid gap-6">
         <ListView query={q} items={q.data ?? []} empty={{ title: t("categories.empty") }}>
           {(rows) => (
             <Table>

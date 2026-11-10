@@ -172,16 +172,16 @@ describe("PostsPage", () => {
     await waitFor(() => expect(change).toHaveBeenLastCalledWith({ category: 1, label: 2, q: "k" }, { replace: true }));
   });
 
-  it("n navigates to new post; empty state offers create; non-creators don't", async () => {
+  it("n opens new post modal; empty state offers create; non-creators don't", async () => {
     signIn();
     server.use(
       ...taxonomy(),
       http.get(api("/posts"), () => page([])),
     );
-    const { user, router } = await renderRouted(<PostsPage filters={{}} onFiltersChange={() => {}} />);
+    const { user } = await renderRouted(<PostsPage filters={{}} onFiltersChange={() => {}} />);
     expect(await screen.findByText("No posts match these filters.")).toBeInTheDocument();
     await user.keyboard("n");
-    await waitFor(() => expect(router.state.location.pathname).toBe("/posts/new"));
+    expect(await screen.findByRole("dialog", { name: "New post" })).toBeInTheDocument();
   });
 
   it("unknown category/draft rows show a dash; scheduled time; delete via row; bulk delete; clear selection", async () => {

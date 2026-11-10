@@ -9,6 +9,7 @@
     "typecheck": "tsr generate && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "coverage": "vitest run --coverage",
     "e2e": "playwright test",
     "lint": "biome check .",

@@ -1,5 +1,6 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { describe, expect, it, vi } from "vitest";
 import { renderUI } from "@/test/render";
 import { ConfirmDialog } from "./dialog";
@@ -71,5 +72,30 @@ describe("ConfirmDialog", () => {
     await user.type(within(dialog).getByLabelText("Type editors to confirm"), "s");
     await user.click(confirm);
     expect(onConfirm).toHaveBeenCalledOnce();
+  });
+
+  it("Enter before the name matches does nothing; Enter once it matches confirms", async () => {
+    const onConfirm = vi.fn(() => Promise.resolve());
+    const { user } = renderUI(<Harness onConfirm={onConfirm} confirmText="editors" />);
+    const dialog = await screen.findByRole("alertdialog");
+    const input = within(dialog).getByLabelText("Type editors to confirm");
+    await user.type(input, "edit{Enter}");
+    expect(onConfirm).not.toHaveBeenCalled();
+    await user.type(input, "ors{Enter}");
+    await waitFor(() => expect(onConfirm).toHaveBeenCalledOnce());
+  });
+
+  it("the error toast Retry action runs the confirm again", async () => {
+    const err = vi.spyOn(toast, "error").mockReturnValue(1);
+    const onConfirm = vi.fn().mockRejectedValueOnce(new Error("db down")).mockResolvedValueOnce(undefined);
+    const { user } = renderUI(<Harness onConfirm={onConfirm} />);
+    const dialog = await screen.findByRole("alertdialog");
+    await user.click(within(dialog).getByRole("button", { name: "Delete post" }));
+    await waitFor(() => expect(err).toHaveBeenCalled());
+    const { action } = (err.mock.calls[0] as unknown as [string, { action: { onClick: () => void } }])[1];
+    action.onClick();
+    await waitFor(() => expect(onConfirm).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.getByText("closed")).toBeInTheDocument());
+    err.mockRestore();
   });
 });

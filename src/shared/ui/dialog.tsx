@@ -8,7 +8,8 @@ import { notifyError } from "@/shared/lib/notify";
 import { Button } from "./button";
 import { Input } from "./input";
 
-const overlay = "fixed inset-0 z-50 bg-overlay backdrop-blur-sm data-[state=open]:animate-in data-[state=open]:fade-in-0";
+const overlay =
+  "fixed inset-0 z-50 bg-overlay backdrop-blur-sm data-[state=open]:animate-in data-[state=open]:fade-in-0";
 const content =
   "fixed left-1/2 top-1/2 z-50 grid max-h-[90dvh] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-xl border border-border bg-popover p-6 shadow-lg";
 

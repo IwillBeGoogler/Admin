@@ -1,7 +1,7 @@
 import { createHttpClient } from "@/shared/http/client";
 import { createTokenStore } from "@/shared/http/tokenStore";
-import { settingsSync } from "@/shared/settingsSync";
 import { currentLocale } from "@/shared/i18n";
+import { settingsSync } from "@/shared/settingsSync";
 
 export type { components as ApiSchemas, paths as ApiPaths } from "./openapi";
 
