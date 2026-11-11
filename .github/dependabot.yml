@@ -7,6 +7,10 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      # jsdom 31 changes CSS serialization and breaks tests (seen in Web); move to it deliberately, not via a dependabot merge.
+      - dependency-name: jsdom
+        update-types: [version-update:semver-major]
   - package-ecosystem: github-actions
     directory: /
     schedule:
