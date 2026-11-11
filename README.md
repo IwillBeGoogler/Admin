@@ -1,4 +1,4 @@
-# Blog Admin (React)
+# IWillBeGoogler Admin (React)
 
 Admin panel for the IWillBeGoogler Medium-style blog. Talks to the Go monolith ([iwillbegoogler-monolith-go](https://github.com/IWillBeGoogler/iwillbegoogler-monolith-go), `:8080`) through `/api`.
 

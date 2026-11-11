@@ -127,11 +127,11 @@ describe("AdminLayout", () => {
     server.use(...apiMocks());
     const { router } = renderApp("/comments");
     await screen.findByRole("heading", { name: "Comments", level: 1 });
-    expect(document.title).toBe("Comments · Blog Admin");
+    expect(document.title).toBe("Comments · IWillBeGoogler Admin");
     await router.navigate({ to: "/reports" });
     const h1 = await screen.findByRole("heading", { name: "Reports", level: 1 });
     await waitFor(() => expect(h1).toHaveFocus());
-    expect(document.title).toBe("Reports · Blog Admin");
+    expect(document.title).toBe("Reports · IWillBeGoogler Admin");
     expect(JSON.parse(localStorage.getItem("admin.recent") ?? "[]")[0]).toBe("/reports?status=open");
   });
 

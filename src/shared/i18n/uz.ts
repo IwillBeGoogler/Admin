@@ -1,7 +1,7 @@
 import type { Dict } from "./en";
 
 export const uz: Dict = {
-  app: { name: "Blog Admin", skip: "Kontentga o'tish", menu: "Menyu", closeMenu: "Menyuni yopish" },
+  app: { name: "IWillBeGoogler Admin", skip: "Kontentga o'tish", menu: "Menyu", closeMenu: "Menyuni yopish" },
   common: {
     save: "Saqlash",
     cancel: "Bekor qilish",

@@ -1,5 +1,5 @@
 export const en = {
-  app: { name: "Blog Admin", skip: "Skip to content", menu: "Menu", closeMenu: "Close menu" },
+  app: { name: "IWillBeGoogler Admin", skip: "Skip to content", menu: "Menu", closeMenu: "Close menu" },
   common: {
     save: "Save",
     cancel: "Cancel",
