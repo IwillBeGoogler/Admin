@@ -142,17 +142,48 @@
   }
 }
 
-/* Same frosted glass as the site: surfaces over the sky blur it; floating ones stay solid so they read over anything. */
-:is(aside, header, .bg-card) {
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  backdrop-filter: blur(20px) saturate(160%);
+/* The site's glass recipe: same token names and values as Web/src/styles.css, so both apps read as one surface language.
+   Surfaces over the sky are frosted, sheened and edge-lit; floating ones take the denser popover fill so they read over anything. */
+html {
+  --glass-fill-float: color-mix(in srgb, var(--popover) 86%, transparent);
+  --glass-sheen: linear-gradient(135deg, rgb(255 255 255 / 0.5), rgb(255 255 255 / 0.15) 45%, rgb(255 255 255 / 0.3));
+  --glass-filter: blur(24px) saturate(160%);
+  --glass-edge: rgb(0 0 0 / 0.08);
+  --glass-shadow: inset 0 1px 0 0 rgb(255 255 255 / 0.85), 0 12px 32px -20px rgb(11 16 48 / 0.3);
+  --glass-shadow-float: inset 0 1px 0 0 rgb(255 255 255 / 0.9), 0 24px 60px -24px rgb(11 16 48 / 0.45);
 }
-.bg-card .bg-card {
+html.dark {
+  --glass-sheen: linear-gradient(135deg, rgb(255 255 255 / 0.09), rgb(255 255 255 / 0.02) 45%, rgb(255 255 255 / 0.05));
+  --glass-filter: blur(28px) saturate(180%);
+  --glass-edge: rgb(255 255 255 / 0.13);
+  --glass-shadow:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.22), inset 0 -1px 0 0 rgb(255 255 255 / 0.04),
+    0 14px 44px -22px rgb(0 0 0 / 0.85);
+  --glass-shadow-float:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.24), inset 0 -1px 0 0 rgb(255 255 255 / 0.05),
+    0 28px 70px -24px rgb(0 0 0 / 0.9);
+}
+:is(aside, header, .bg-card) {
+  background-image: var(--glass-sheen);
+  -webkit-backdrop-filter: var(--glass-filter);
+  backdrop-filter: var(--glass-filter);
+  border-color: var(--glass-edge);
+  box-shadow: var(--glass-shadow);
+}
+/* Only top-level surfaces blur: glass nested in glass keeps its tint but never re-filters or re-lifts */
+:is(aside, header, .bg-card, [role="dialog"], [role="alertdialog"]) :is(aside, header, .bg-card) {
+  background-image: none;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
+  box-shadow: none;
 }
 :is([role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]) {
-  background-color: var(--popover);
+  background-color: var(--glass-fill-float);
+  background-image: var(--glass-sheen);
+  -webkit-backdrop-filter: var(--glass-filter);
+  backdrop-filter: var(--glass-filter);
+  border-color: var(--glass-edge);
+  box-shadow: var(--glass-shadow-float);
 }
 
 /* Table density (UX_SPEC item 11). Unlayered so it wins over cell utilities. */
