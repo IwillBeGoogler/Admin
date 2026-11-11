@@ -127,3 +127,15 @@ export const formatBytes = (n: number, locale: string): string => {
   const fmt = new Intl.NumberFormat(locale, { maximumFractionDigits: v < 10 && i > 0 ? 1 : 0 });
   return `${fmt.format(v)} ${UNITS[i]}`;
 };
+
+export const filePreviewSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  kind: z.string(),
+  version: z.number(),
+  pages: z
+    .array(z.object({ name: z.string(), svg: z.string() }))
+    .nullable()
+    .transform((v) => v ?? []),
+});
+export type FilePreview = z.infer<typeof filePreviewSchema>;

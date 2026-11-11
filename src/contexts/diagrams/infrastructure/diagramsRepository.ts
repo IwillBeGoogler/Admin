@@ -3,6 +3,8 @@ import { dataEnvelope, type Page, type PageRequest, pageEnvelope } from "@/share
 import {
   type DiagramStats,
   diagramStatsSchema,
+  type FilePreview,
+  filePreviewSchema,
   type ProjectDetail,
   type ProjectSummary,
   type ProjectsSearch,
@@ -27,6 +29,13 @@ export const diagramRepository = {
   project: async (id: string, signal?: AbortSignal): Promise<ProjectDetail> =>
     (await http(`${base}/projects/${encodeURIComponent(id)}`, { schema: dataEnvelope(projectDetailSchema), signal }))
       .data,
+  preview: async (fileId: string, signal?: AbortSignal): Promise<FilePreview> =>
+    (
+      await http(`${base}/files/${encodeURIComponent(fileId)}/preview`, {
+        schema: dataEnvelope(filePreviewSchema),
+        signal,
+      })
+    ).data,
   deleteProject: async (id: string): Promise<void> =>
     void (await http(`${base}/projects/${encodeURIComponent(id)}`, { method: "DELETE" })),
   revokeShare: async (shareId: string): Promise<void> =>

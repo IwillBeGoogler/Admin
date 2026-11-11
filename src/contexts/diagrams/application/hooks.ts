@@ -13,6 +13,7 @@ export const diagramKeys = {
       : ([...diagramKeys.all, "projects"] as const),
   project: (id: string) => [...diagramKeys.all, "project", id] as const,
   templates: () => [...diagramKeys.all, "templates"] as const,
+  preview: (fileId: string) => [...diagramKeys.all, "preview", fileId] as const,
 };
 
 export const useDiagramStats = () =>
@@ -92,3 +93,10 @@ export function useDeleteTemplate() {
     onSuccess: () => void qc.invalidateQueries({ queryKey: diagramKeys.templates() }),
   });
 }
+
+export const useFilePreview = (fileId: string | null) =>
+  useQuery({
+    queryKey: diagramKeys.preview(fileId ?? ""),
+    queryFn: ({ signal }) => diagramRepository.preview(fileId as string, signal),
+    enabled: fileId !== null,
+  });

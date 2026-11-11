@@ -18,6 +18,6 @@ export default defineConfig({
     tailwindcss(),
   ],
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
-  server: { port: 5174, proxy: { "/api": "http://localhost:8080" } },
-  preview: { port: 5174, proxy: { "/api": "http://localhost:8080" } },
+  server: { port: 5174, proxy: { "/api": "http://127.0.0.1:8080" } },
+  preview: { port: 5174, proxy: { "/api": "http://127.0.0.1:8080" } },
 });
