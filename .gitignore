@@ -13,3 +13,6 @@ tools/openapi/node_modules
 coverage
 .tanstack
 *.log
+
+# vitest shard reports (CI merges them)
+.vitest/
