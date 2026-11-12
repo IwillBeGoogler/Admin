@@ -258,6 +258,7 @@ function PreviewDialog({ file, onClose }: { file: { id: string; name: string } |
         ) : (
           <div className="grid gap-4">
             {q.data.pages.map((pg, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: pages have no id, repeat names, and the list is never reordered
               <figure key={`${i}-${pg.name}`} className="grid gap-2">
                 {q.data.pages.length > 1 && (
                   <figcaption className="text-xs text-muted-foreground">{pg.name}</figcaption>

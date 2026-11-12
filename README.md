@@ -73,4 +73,4 @@ sent to `/login?expired=true`.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Licensed under [MIT](LICENSE).
+See [CONTRIBUTING.md](CONTRIBUTING.md). Copyright © IWillBeGoogler. All rights reserved ([LICENSE](LICENSE)); the source is public to read, not to reuse.
