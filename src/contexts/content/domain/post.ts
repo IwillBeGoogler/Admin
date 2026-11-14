@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { list } from "@/shared/http/envelope";
 import { localInputToRFC3339, rfc3339ToLocalInput, toTags } from "@/shared/lib/format";
+import { type ArticleTermPayload, articleTermSchema, articleTermsIssue, toArticleTermPayload } from "./glossary";
 
 export const postStatuses = ["draft", "published", "scheduled", "unlisted"] as const;
 export const postStatusSchema = z.enum(postStatuses);
@@ -28,6 +29,7 @@ export const postSchema = z.object({
   canonical_url: z.string().default(""),
   tags: list(z.string()),
   labels: list(labelSchema),
+  glossary: list(z.object({ term: z.string(), aliases: list(z.string()), definition: z.string() })),
   likes: z.number().default(0),
   claps: z.number().default(0),
   comments_count: z.number().default(0),
@@ -53,6 +55,7 @@ export const postFormBase = z.object({
   canonicalUrl: z.string().trim(),
   tags: z.string(),
   labelIds: z.array(z.number().int()),
+  glossary: z.array(articleTermSchema),
 });
 export type PostForm = z.infer<typeof postFormBase>;
 
@@ -74,6 +77,8 @@ export const postFormSchema = (now: Date) =>
       issue("canonicalUrl", "posts.badUrl");
     if (toTags(v.tags).length > LIMITS.tags) issue("tags", "posts.tooManyTags");
     if (new Set(v.labelIds).size > LIMITS.labels) issue("labelIds", "posts.tooManyLabels");
+    const g = articleTermsIssue(v.glossary);
+    if (g) issue("glossary", g);
   });
 
 export const emptyPostForm = (): PostForm => ({
@@ -87,6 +92,7 @@ export const emptyPostForm = (): PostForm => ({
   canonicalUrl: "",
   tags: "",
   labelIds: [],
+  glossary: [],
 });
 
 export const postToForm = (p: Post): PostForm => ({
@@ -100,6 +106,7 @@ export const postToForm = (p: Post): PostForm => ({
   canonicalUrl: p.canonical_url,
   tags: (p.tags ?? []).join(", "),
   labelIds: (p.labels ?? []).map((l) => l.id),
+  glossary: (p.glossary ?? []).map((g) => ({ term: g.term, aliases: g.aliases.join(", "), definition: g.definition })),
 });
 
 /** Body for POST /posts and PUT /posts/{id} (post.Draft JSON). */
@@ -114,6 +121,7 @@ export interface DraftPayload {
   canonical_url: string;
   tags: string[];
   label_ids: number[];
+  glossary: ArticleTermPayload[];
 }
 
 export const toDraftPayload = (f: PostForm): DraftPayload => ({
@@ -127,6 +135,7 @@ export const toDraftPayload = (f: PostForm): DraftPayload => ({
   canonical_url: f.canonicalUrl.trim(),
   tags: toTags(f.tags),
   label_ids: [...new Set(f.labelIds)].sort((a, b) => a - b),
+  glossary: f.glossary.map(toArticleTermPayload),
 });
 
 /** Which list the posts table shows: the public feed or the admin's own drafts. */

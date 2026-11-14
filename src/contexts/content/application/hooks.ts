@@ -7,10 +7,12 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { nextPageRequest, type PageRequest } from "@/shared/http";
+import type { GlossaryPayload } from "../domain/glossary";
 import type { DraftPayload, PostFilters } from "../domain/post";
 import { sortTags } from "../domain/taxonomy";
 import {
   categoryRepository,
+  glossaryRepository,
   labelRepository,
   postRepository,
   tagRepository,
@@ -28,6 +30,7 @@ export const contentKeys = {
   categories: () => [...contentKeys.all, "categories"] as const,
   labels: () => [...contentKeys.all, "labels"] as const,
   tags: () => [...contentKeys.all, "tags"] as const,
+  glossary: () => [...contentKeys.all, "glossary"] as const,
 };
 
 export const categoriesQuery = () =>
@@ -148,3 +151,28 @@ export const usePostQuickSearch = (q: string, enabled = true) =>
     enabled: enabled && q.trim().length >= 2,
     staleTime: 30_000,
   });
+
+export const useGlossary = () =>
+  useQuery({
+    queryKey: contentKeys.glossary(),
+    queryFn: ({ signal }) => glossaryRepository.list(signal),
+    staleTime: 60_000,
+  });
+
+/** Creates a term, or replaces the one with `id`. */
+export function useSaveGlossaryTerm(id: number | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (d: GlossaryPayload) =>
+      id === undefined ? glossaryRepository.create(d) : glossaryRepository.update(id, d),
+    onSuccess: () => qc.invalidateQueries({ queryKey: contentKeys.glossary() }),
+  });
+}
+
+export function useDeleteGlossaryTerm() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => glossaryRepository.remove(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: contentKeys.glossary() }),
+  });
+}

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { articleTermIssue, articleTermsIssue } from "./glossary";
 import { emptyPostForm, postFormSchema, postSchema, postToForm, toDraftPayload } from "./post";
 
 const now = new Date("2030-01-01T00:00:00Z");
@@ -48,6 +49,7 @@ describe("post form rules", () => {
       canonical_url: "",
       tags: ["go", "docker"],
       label_ids: [1, 3],
+      glossary: [],
     });
     const sch = postFormSchema(now).parse({ ...valid, status: "scheduled", publishAt: "2031-01-01T00:00" });
     expect(toDraftPayload(sch).publish_at).toBe(new Date("2031-01-01T00:00").toISOString());
@@ -149,3 +151,45 @@ function basePost() {
     updated_at: "2026-10-05T14:59:34Z",
   };
 }
+
+describe("article glossary", () => {
+  const e = (term: string, aliases = "", definition = "def") => ({ term, aliases, definition });
+  it("maps to payload and back", () => {
+    const f = postFormSchema(now).parse({ ...valid, glossary: [e(" Pod ", "pods, pods,  ")] });
+    expect(toDraftPayload(f).glossary).toEqual([{ term: "Pod", aliases: ["pods"], definition: "def" }]);
+    expect(emptyPostForm().glossary).toEqual([]);
+  });
+  it("mirrors server limits", () => {
+    expect(articleTermIssue(e("", "", "x"), [])).toBe("auth.required");
+    expect(articleTermIssue(e("a".repeat(81)), [])).toBe("glossary.termTooLong");
+    expect(articleTermIssue(e("a", "", "d".repeat(601)), [])).toBe("glossary.definitionTooLong");
+    expect(articleTermIssue(e("a", Array.from({ length: 11 }, (_, i) => `x${i}`).join(",")), [])).toBe(
+      "glossary.tooManyAliases",
+    );
+    expect(articleTermIssue(e("A"), [e("b", "a")])).toBe("glossary.duplicate");
+    expect(articleTermIssue(e("a", "A"), [])).toBeUndefined(); // an alias repeating the term is dropped, as the server does
+    expect(
+      articleTermIssue(
+        e("ok"),
+        Array.from({ length: 50 }, (_, i) => e(`t${i}`)),
+      ),
+    ).toBe("glossary.tooManyTerms");
+    expect(articleTermsIssue([e("a"), e("A")])).toBe("glossary.duplicate");
+    expect(articleTermsIssue([e("a"), e("b")])).toBeUndefined();
+  });
+  it("post schema defaults glossary to []", () => {
+    const p = postSchema.parse({
+      id: 1,
+      title: "t",
+      slug: "s",
+      status: "draft",
+      user_id: 1,
+      created_at: "x",
+      updated_at: "x",
+      tags: [],
+      labels: [],
+    });
+    expect(p.glossary).toEqual([]);
+    expect(postToForm(p).glossary).toEqual([]);
+  });
+});

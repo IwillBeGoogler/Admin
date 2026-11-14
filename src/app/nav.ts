@@ -1,5 +1,6 @@
 import {
   BanIcon,
+  BookOpenTextIcon,
   BoxesIcon,
   BugIcon,
   FileTextIcon,
@@ -29,6 +30,7 @@ export interface NavItem {
     | "/categories"
     | "/labels"
     | "/tags"
+    | "/glossary"
     | "/diagrams"
     | "/diagram-templates"
     | "/reports"
@@ -74,6 +76,7 @@ export const navigation: NavGroup[] = [
       { to: "/categories", label: "nav.categories", icon: FolderIcon, anyOf: ["category.write"] },
       { to: "/labels", label: "nav.labels", icon: TagIcon, anyOf: ["label.write"] },
       { to: "/tags", label: "nav.tags", icon: HashIcon, anyOf: [] },
+      { to: "/glossary", label: "nav.glossary", icon: BookOpenTextIcon, anyOf: ["glossary.write"] },
     ],
   },
   {

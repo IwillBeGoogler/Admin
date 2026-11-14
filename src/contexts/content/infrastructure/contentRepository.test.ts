@@ -84,6 +84,7 @@ describe("postRepository", () => {
       canonical_url: "",
       tags: [],
       label_ids: [],
+      glossary: [],
     };
     expect((await postRepository.create(d)).id).toBe(9);
     expect((await postRepository.update(9, { ...d, title: "M" })).title).toBe("M");

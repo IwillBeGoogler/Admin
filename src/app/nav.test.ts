@@ -10,7 +10,7 @@ describe("permission-based navigation", () => {
     expect(nav.map((g) => g.label)).toEqual(["nav.content", "nav.moderation", "nav.access"]);
   });
   it("super admin sees all", () => {
-    expect(visibleNavigation(() => true).flatMap((g) => g.items)).toHaveLength(18);
+    expect(visibleNavigation(() => true).flatMap((g) => g.items)).toHaveLength(19);
   });
   it("gates diagram pages on their own permissions", () => {
     const only = (...p: string[]) => {

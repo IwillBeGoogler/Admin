@@ -39,6 +39,7 @@ import {
 } from "../domain/post";
 import type { DiffOp } from "../domain/revision";
 import { diffStats } from "../domain/revision";
+import { ArticleGlossary } from "./ArticleGlossary";
 import { StatusBadge } from "./StatusBadge";
 
 export function PostEditorPage({ postId, onSaved }: { postId?: number; onSaved: (id: number) => void }) {
@@ -107,6 +108,8 @@ function EditorForm({ post, onSaved }: { post: Post | undefined; onSaved: (id: n
   const msg = (k?: string) => (k ? t(k as MessageKey) : undefined);
   const status = form.watch("status");
   const dirty = form.formState.isDirty;
+  const bodyRef = useRef<HTMLTextAreaElement | null>(null);
+  const bodyReg = form.register("body");
   /** Set once a save succeeds so the follow-up navigation is not blocked. */
   const saved = useRef(false);
 
@@ -228,7 +231,16 @@ function EditorForm({ post, onSaved }: { post: Post | undefined; onSaved: (id: n
           <Field label={t("posts.body")} error={msg(e.body?.message)}>
             {(a) => (
               <>
-                <Textarea {...a} rows={16} className="font-mono" {...form.register("body")} />
+                <Textarea
+                  {...a}
+                  rows={16}
+                  className="font-mono"
+                  {...bodyReg}
+                  ref={(el) => {
+                    bodyReg.ref(el);
+                    bodyRef.current = el;
+                  }}
+                />
                 <div>
                   <Button
                     type="button"
@@ -254,6 +266,29 @@ function EditorForm({ post, onSaved }: { post: Post | undefined; onSaved: (id: n
               </>
             )}
           </Field>
+          <Controller
+            control={form.control}
+            name="glossary"
+            render={({ field }) => (
+              <>
+                <ArticleGlossary
+                  terms={field.value}
+                  onChange={(next) => {
+                    form.setValue("glossary", next, { shouldDirty: true, shouldValidate: true });
+                  }}
+                  getSelection={() => {
+                    const el = bodyRef.current;
+                    return el ? el.value.slice(el.selectionStart, el.selectionEnd) : "";
+                  }}
+                />
+                {e.glossary?.message ? (
+                  <p role="alert" className="text-xs text-destructive">
+                    {msg(e.glossary.message)}
+                  </p>
+                ) : null}
+              </>
+            )}
+          />
           {e.root?.message ? (
             <p role="alert" className="text-sm text-destructive">
               {e.root.message}

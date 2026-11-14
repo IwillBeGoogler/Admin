@@ -292,4 +292,84 @@ describe("PostEditorPage", () => {
     expect(await within(dlg).findByText("sub")).toBeInTheDocument();
     expect(within(dlg).getByText("gone")).toBeInTheDocument();
   });
+
+  describe("glossary", () => {
+    it("adds an article term from the selection and sends it", async () => {
+      signIn([]);
+      let body: Record<string, unknown> | undefined;
+      server.use(
+        ...taxonomy(),
+        http.post(api("/posts"), async ({ request }) => {
+          body = (await request.json()) as Record<string, unknown>;
+          return HttpResponse.json({ data: post({ id: 12 }) }, { status: 201 });
+        }),
+      );
+      const onSaved = vi.fn();
+      const { user } = await renderRouted(<PostEditorPage onSaved={onSaved} />);
+      await user.type(await screen.findByLabelText("Title"), "G");
+      const ta = screen.getByLabelText("Body (Markdown)") as HTMLTextAreaElement;
+      await user.type(ta, "learn Kubernetes now");
+      ta.setSelectionRange(6, 16);
+      await user.click(screen.getByRole("button", { name: "Add to glossary" }));
+      const dlg = await screen.findByRole("dialog");
+      expect(within(dlg).getByLabelText("Term")).toHaveValue("Kubernetes");
+      expect(within(dlg).queryByLabelText("Scope")).not.toBeInTheDocument();
+      await user.type(within(dlg).getByLabelText("Other forms"), "k8s");
+      await user.type(within(dlg).getByLabelText("Definition"), "Orchestrator");
+      await user.click(within(dlg).getByRole("button", { name: "Create" }));
+      expect(await screen.findByText("Orchestrator")).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Create" }));
+      await waitFor(() => expect(onSaved).toHaveBeenCalledWith(12));
+      expect(body?.glossary).toEqual([{ term: "Kubernetes", aliases: ["k8s"], definition: "Orchestrator" }]);
+    });
+
+    it("rejects a duplicate, then edits and removes", async () => {
+      signIn([]);
+      server.use(
+        ...taxonomy(),
+        http.get(api("/posts/4"), () =>
+          HttpResponse.json({ data: post({ glossary: [{ term: "Pod", aliases: [], definition: "Unit" }] }) }),
+        ),
+      );
+      const { user } = await renderRouted(<PostEditorPage postId={4} onSaved={() => {}} />);
+      await user.click(await screen.findByRole("button", { name: "Add to glossary" }));
+      let dlg = await screen.findByRole("dialog");
+      await user.type(within(dlg).getByLabelText("Term"), "pod");
+      await user.type(within(dlg).getByLabelText("Definition"), "x");
+      await user.click(within(dlg).getByRole("button", { name: "Create" }));
+      expect(await within(dlg).findByText("This term or form is already in the article")).toBeInTheDocument();
+      await user.click(within(dlg).getByRole("button", { name: "Close" }));
+      await user.click(await screen.findByRole("button", { name: "Edit: Pod" }));
+      dlg = await screen.findByRole("dialog");
+      await user.clear(within(dlg).getByLabelText("Definition"));
+      await user.type(within(dlg).getByLabelText("Definition"), "Smallest unit");
+      await user.click(within(dlg).getByRole("button", { name: "Save" }));
+      expect(await screen.findByText("Smallest unit")).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Delete: Pod" }));
+      expect(screen.getByText("No terms for this article yet.")).toBeInTheDocument();
+    });
+
+    it("glossary.write can add a site-wide term with a language", async () => {
+      signIn("all");
+      let sent: Record<string, unknown> | undefined;
+      server.use(
+        ...taxonomy(),
+        http.post(api("/glossary"), async ({ request }) => {
+          sent = (await request.json()) as Record<string, unknown>;
+          return HttpResponse.json({ data: { id: 1, ...sent } }, { status: 201 });
+        }),
+      );
+      const { user } = await renderRouted(<PostEditorPage onSaved={() => {}} />);
+      await user.click(await screen.findByRole("button", { name: "Add to glossary" }));
+      const dlg = await screen.findByRole("dialog");
+      await user.type(within(dlg).getByLabelText("Term"), "Pod");
+      await user.type(within(dlg).getByLabelText("Definition"), "Unit");
+      await user.selectOptions(within(dlg).getByLabelText("Scope"), "all");
+      await user.selectOptions(within(dlg).getByLabelText("Language"), "uz");
+      await user.click(within(dlg).getByRole("button", { name: "Create" }));
+      await waitFor(() => expect(sent).toMatchObject({ term: "Pod", definition: "Unit", lang: "uz", aliases: [] }));
+      await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+      expect(screen.getByText("No terms for this article yet.")).toBeInTheDocument();
+    });
+  });
 });

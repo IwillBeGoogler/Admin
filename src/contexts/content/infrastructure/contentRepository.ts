@@ -1,6 +1,7 @@
 import type { z } from "zod";
 import { type ApiSchemas, http } from "@/shared/api";
 import { dataEnvelope, list, type Page, type PageRequest, pageEnvelope } from "@/shared/http";
+import { type GlossaryPayload, type GlossaryTerm, glossaryTermSchema } from "../domain/glossary";
 import { type DraftPayload, type Label, labelSchema, type Post, type PostFilters, postSchema } from "../domain/post";
 import { type Revision, type RevisionDetail, revisionDetailSchema, revisionSchema } from "../domain/revision";
 import { type Category, categorySchema, type Tag, tagSchema } from "../domain/taxonomy";
@@ -70,4 +71,14 @@ export const labelRepository = {
 
 export const tagRepository = {
   list: async (signal?: AbortSignal): Promise<Tag[]> => (await http("/tags", { schema: many(tagSchema), signal })).data,
+};
+
+export const glossaryRepository = {
+  list: async (signal?: AbortSignal): Promise<GlossaryTerm[]> =>
+    (await http("/glossary", { schema: many(glossaryTermSchema), signal })).data,
+  create: async (body: GlossaryPayload): Promise<GlossaryTerm> =>
+    (await http("/glossary", { method: "POST", body, schema: dataEnvelope(glossaryTermSchema) })).data,
+  update: async (id: number, body: GlossaryPayload): Promise<GlossaryTerm> =>
+    (await http(`/glossary/${id}`, { method: "PUT", body, schema: dataEnvelope(glossaryTermSchema) })).data,
+  remove: async (id: number): Promise<void> => void (await http(`/glossary/${id}`, { method: "DELETE" })),
 };

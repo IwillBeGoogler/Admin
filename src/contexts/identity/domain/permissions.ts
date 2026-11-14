@@ -40,6 +40,7 @@ export const ADMIN_PERMISSIONS = [
   "user.ban",
   "category.write",
   "label.write",
+  "glossary.write",
   "role.read",
   "policy.read",
   "audit.read",

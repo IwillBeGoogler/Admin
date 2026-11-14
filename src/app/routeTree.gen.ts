@@ -19,6 +19,7 @@ import { Route as AuthedClientErrorsRouteImport } from './routes/_authed/client-
 import { Route as AuthedCommentsRouteImport } from './routes/_authed/comments'
 import { Route as AuthedDiagramTemplatesRouteImport } from './routes/_authed/diagram-templates'
 import { Route as AuthedFeedbackRouteImport } from './routes/_authed/feedback'
+import { Route as AuthedGlossaryRouteImport } from './routes/_authed/glossary'
 import { Route as AuthedLabelsRouteImport } from './routes/_authed/labels'
 import { Route as AuthedPermissionsRouteImport } from './routes/_authed/permissions'
 import { Route as AuthedPoliciesRouteImport } from './routes/_authed/policies'
@@ -82,6 +83,11 @@ const AuthedDiagramTemplatesRoute = AuthedDiagramTemplatesRouteImport.update({
 const AuthedFeedbackRoute = AuthedFeedbackRouteImport.update({
   id: '/feedback',
   path: '/feedback',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedGlossaryRoute = AuthedGlossaryRouteImport.update({
+  id: '/glossary',
+  path: '/glossary',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedLabelsRoute = AuthedLabelsRouteImport.update({
@@ -170,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/comments': typeof AuthedCommentsRoute
   '/diagram-templates': typeof AuthedDiagramTemplatesRoute
   '/feedback': typeof AuthedFeedbackRoute
+  '/glossary': typeof AuthedGlossaryRoute
   '/labels': typeof AuthedLabelsRoute
   '/permissions': typeof AuthedPermissionsRoute
   '/policies': typeof AuthedPoliciesRoute
@@ -195,6 +202,7 @@ export interface FileRoutesByTo {
   '/comments': typeof AuthedCommentsRoute
   '/diagram-templates': typeof AuthedDiagramTemplatesRoute
   '/feedback': typeof AuthedFeedbackRoute
+  '/glossary': typeof AuthedGlossaryRoute
   '/labels': typeof AuthedLabelsRoute
   '/permissions': typeof AuthedPermissionsRoute
   '/policies': typeof AuthedPoliciesRoute
@@ -223,6 +231,7 @@ export interface FileRoutesById {
   '/_authed/comments': typeof AuthedCommentsRoute
   '/_authed/diagram-templates': typeof AuthedDiagramTemplatesRoute
   '/_authed/feedback': typeof AuthedFeedbackRoute
+  '/_authed/glossary': typeof AuthedGlossaryRoute
   '/_authed/labels': typeof AuthedLabelsRoute
   '/_authed/permissions': typeof AuthedPermissionsRoute
   '/_authed/policies': typeof AuthedPoliciesRoute
@@ -252,6 +261,7 @@ export interface FileRouteTypes {
     | '/comments'
     | '/diagram-templates'
     | '/feedback'
+    | '/glossary'
     | '/labels'
     | '/permissions'
     | '/policies'
@@ -277,6 +287,7 @@ export interface FileRouteTypes {
     | '/comments'
     | '/diagram-templates'
     | '/feedback'
+    | '/glossary'
     | '/labels'
     | '/permissions'
     | '/policies'
@@ -304,6 +315,7 @@ export interface FileRouteTypes {
     | '/_authed/comments'
     | '/_authed/diagram-templates'
     | '/_authed/feedback'
+    | '/_authed/glossary'
     | '/_authed/labels'
     | '/_authed/permissions'
     | '/_authed/policies'
@@ -397,6 +409,13 @@ declare module '@tanstack/react-router' {
       path: '/feedback'
       fullPath: '/feedback'
       preLoaderRoute: typeof AuthedFeedbackRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/glossary': {
+      id: '/_authed/glossary'
+      path: '/glossary'
+      fullPath: '/glossary'
+      preLoaderRoute: typeof AuthedGlossaryRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/labels': {
@@ -515,6 +534,7 @@ interface AuthedRouteChildren {
   AuthedCommentsRoute: typeof AuthedCommentsRoute
   AuthedDiagramTemplatesRoute: typeof AuthedDiagramTemplatesRoute
   AuthedFeedbackRoute: typeof AuthedFeedbackRoute
+  AuthedGlossaryRoute: typeof AuthedGlossaryRoute
   AuthedLabelsRoute: typeof AuthedLabelsRoute
   AuthedPermissionsRoute: typeof AuthedPermissionsRoute
   AuthedPoliciesRoute: typeof AuthedPoliciesRoute
@@ -541,6 +561,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedCommentsRoute: AuthedCommentsRoute,
   AuthedDiagramTemplatesRoute: AuthedDiagramTemplatesRoute,
   AuthedFeedbackRoute: AuthedFeedbackRoute,
+  AuthedGlossaryRoute: AuthedGlossaryRoute,
   AuthedLabelsRoute: AuthedLabelsRoute,
   AuthedPermissionsRoute: AuthedPermissionsRoute,
   AuthedPoliciesRoute: AuthedPoliciesRoute,
