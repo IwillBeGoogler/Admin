@@ -13,6 +13,7 @@
       "!src/shared/api/openapi.d.ts",
       "!playwright-report",
       "!coverage",
+      "!.vitest",
       "!e2e/.auth",
       "!test-results",
       "!public/mockServiceWorker.js"

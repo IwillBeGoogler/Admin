@@ -14,8 +14,17 @@ export const categoryInputSchema = z.object({
     .trim()
     .min(1, "auth.required")
     .refine((s) => bytes(s) <= 50, "categories.tooLong"),
+  /** empty: the server derives it from the name (which fails for a name with no Latin letters) */
+  slug: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .refine((s) => s === "" || /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(s), "categories.badSlug")
+    .default(""),
+  parent_id: z.number().int().nonnegative().default(0),
 });
-export type CategoryInput = z.infer<typeof categoryInputSchema>;
+export type CategoryInput = z.output<typeof categoryInputSchema>;
+export type CategoryForm = z.input<typeof categoryInputSchema>;
 
 export const normalizeColor = (c: string) => {
   const v = c.trim();

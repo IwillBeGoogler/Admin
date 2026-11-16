@@ -36,14 +36,10 @@ describe("http client edges", () => {
     expect(err.status).toBe(400);
   });
 
-  it.each([
-    ["no token in body", () => HttpResponse.json({ data: {} })],
-    ["non-ok", () => HttpResponse.json({}, { status: 500 })],
-    ["network error", () => HttpResponse.error()],
-  ])("failed refresh (%s) expires the session", async (_n, refresh) => {
+  it("a refresh the server rejects (401) expires the session", async () => {
     server.use(
       http.get(api("/t"), () => HttpResponse.json({}, { status: 401 })),
-      http.post(api("/auth/refresh"), refresh),
+      http.post(api("/auth/refresh"), () => HttpResponse.json({}, { status: 401 })),
     );
     const { client, onSessionExpired, tokens } = setup();
     await client("/t").catch(() => {});
@@ -51,14 +47,20 @@ describe("http client edges", () => {
     expect(tokens.get()).toBeNull();
   });
 
-  it("non-JSON refresh body is tolerated", async () => {
+  it.each([
+    ["no token in body", () => HttpResponse.json({ data: {} })],
+    ["server error", () => HttpResponse.json({}, { status: 500 })],
+    ["network error", () => HttpResponse.error()],
+    ["non-JSON body", () => new HttpResponse("plain", { status: 200 })],
+  ])("a transient refresh failure (%s) keeps the session", async (_n, refresh) => {
     server.use(
       http.get(api("/t"), () => HttpResponse.json({}, { status: 401 })),
-      http.post(api("/auth/refresh"), () => new HttpResponse("plain", { status: 200 })),
+      http.post(api("/auth/refresh"), refresh),
     );
-    const { client, onSessionExpired } = setup();
+    const { client, onSessionExpired, tokens } = setup();
     await client("/t").catch(() => {});
-    expect(onSessionExpired).toHaveBeenCalled();
+    expect(onSessionExpired).not.toHaveBeenCalled();
+    expect(tokens.get()).not.toBeNull();
   });
 });
 

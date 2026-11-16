@@ -64,18 +64,30 @@ export function ListView<T>({
     </div>
   ) : items.length === 0 ? (
     filtered ? (
-      <EmptyState
-        icon={SearchXIcon}
-        title={t("list.noResults")}
-        hint={t("list.noResultsHint")}
-        action={
-          onClearFilters ? (
-            <Button variant="outline" size="sm" onClick={onClearFilters}>
-              {t("list.clearFilters")}
-            </Button>
-          ) : undefined
-        }
-      />
+      <>
+        <EmptyState
+          icon={SearchXIcon}
+          title={t("list.noResults")}
+          hint={t("list.noResultsHint")}
+          action={
+            onClearFilters ? (
+              <Button variant="outline" size="sm" onClick={onClearFilters}>
+                {t("list.clearFilters")}
+              </Button>
+            ) : undefined
+          }
+        />
+        {/* the filter runs on loaded rows: a match may sit on a page not fetched yet */}
+        {query.hasNextPage && query.fetchNextPage ? (
+          <LoadMore
+            shown={0}
+            total={pageTotal(query.data)}
+            hasNext
+            loading={!!query.isFetchingNextPage}
+            onMore={() => void query.fetchNextPage?.()}
+          />
+        ) : null}
+      </>
     ) : (
       <EmptyState title={empty.title} hint={empty.hint} action={empty.action} />
     )

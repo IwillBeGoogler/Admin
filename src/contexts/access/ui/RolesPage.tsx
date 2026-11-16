@@ -3,7 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeftIcon, ChevronRightIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Can, permissionCode, type Role } from "@/contexts/identity";
+import { Can, permissionCode, type Role, usePermissions } from "@/contexts/identity";
 import { errorMessage } from "@/shared/http";
 import { type MessageKey, useI18n } from "@/shared/i18n";
 import { notifyError, notifySuccess } from "@/shared/lib/notify";
@@ -214,7 +214,8 @@ function NewRole({ onCreated }: { onCreated: (name: string) => void }) {
 
 function RoleCard({ role, onDelete }: { role: Role; onDelete: () => void }) {
   const { t } = useI18n();
-  const all = usePermissionList();
+  const { can } = usePermissions();
+  const all = usePermissionList(can("permission.read")); // without the right the request would only 403
   const grant = useGrantPermission();
   const revoke = useRevokePermission();
   const [pick, setPick] = useState("");

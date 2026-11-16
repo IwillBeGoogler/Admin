@@ -19,7 +19,8 @@ export function LoadMore({
   return (
     <div className="flex items-center justify-between gap-3 border-t border-border px-3 py-3 text-sm text-muted-foreground">
       <span aria-live="polite">
-        {shown} / {t("common.total", { n: Math.max(total, shown) })}
+        {/* cursor lists report no total: with more pages ahead, "20 / 20" would be a lie */}
+        {hasNext && total <= shown ? `${shown}+` : `${shown} / ${t("common.total", { n: Math.max(total, shown) })}`}
       </span>
       {hasNext ? (
         <Button variant="outline" size="sm" onClick={onMore} disabled={loading}>

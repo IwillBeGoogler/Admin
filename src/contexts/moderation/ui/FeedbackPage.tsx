@@ -150,6 +150,7 @@ export function FeedbackPage({
             sort={parseSort(search.sort)}
             onSortChange={(s) => change({ sort: serializeSort(s) })}
             rowLabel={(r) => `#${r.id}`}
+            hotkeys
           />
         )}
       </ListView>

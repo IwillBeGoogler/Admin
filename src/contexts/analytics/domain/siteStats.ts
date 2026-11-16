@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { list } from "@/shared/http/envelope";
 
 const totalsSchema = z.object({
   post_views: z.number().default(0),
@@ -7,6 +8,7 @@ const totalsSchema = z.object({
   posts: z.number().default(0),
   diagrams: z.number().default(0),
   users: z.number().default(0),
+  read_seconds: z.number().default(0),
 });
 
 const topPostSchema = z.object({
@@ -15,6 +17,7 @@ const topPostSchema = z.object({
   title: z.string().default(""),
   author: z.string().default(""),
   views: z.number().default(0),
+  avg_read_seconds: z.number().default(0),
 });
 
 const topDiagramSchema = z.object({
@@ -34,9 +37,9 @@ const dayStatSchema = z.object({
 /** GET /admin/stats/site: view totals, top lists and the last 30 days. */
 export const siteStatsSchema = z.object({
   totals: totalsSchema,
-  top_posts: z.array(topPostSchema).default([]),
-  top_diagrams: z.array(topDiagramSchema).default([]),
-  days: z.array(dayStatSchema).default([]),
+  top_posts: list(topPostSchema),
+  top_diagrams: list(topDiagramSchema),
+  days: list(dayStatSchema),
 });
 export type SiteStats = z.infer<typeof siteStatsSchema>;
 export type SiteDayStat = z.infer<typeof dayStatSchema>;

@@ -13,7 +13,15 @@ describe("SiteStats", () => {
       http.get(api("/admin/stats/site"), () =>
         HttpResponse.json({
           data: {
-            totals: { post_views: 1200, diagram_views: 340, visitors: 77, posts: 5, diagrams: 2, users: 9 },
+            totals: {
+              post_views: 1200,
+              diagram_views: 340,
+              visitors: 77,
+              posts: 5,
+              diagrams: 2,
+              users: 9,
+              read_seconds: 7200,
+            },
             top_posts: [{ id: 1, slug: "a", title: "Caching 101", author: "ali", views: 800 }],
             top_diagrams: [{ slug: "d1", title: "Queue design", author: "vali", views: 300 }],
             days: [{ day: "2026-11-09", post_views: 3, diagram_views: 1, page_views: 9 }],

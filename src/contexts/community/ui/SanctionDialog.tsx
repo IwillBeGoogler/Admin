@@ -48,10 +48,11 @@ export function SanctionDialog({ username, onClose }: { username: string; onClos
       (err) => {
         if (isApiError(err) && err.status < 500) form.setError("root", { message: err.message });
         else notifyError(err);
+        throw err; // the confirm dialog must stay open on failure
       },
     );
   // A permanent ban is high-risk: confirm by typing the username first.
-  const submit = form.handleSubmit((v) => (v.kind === "banned" ? setConfirmBan(v) : save(v)));
+  const submit = form.handleSubmit((v) => (v.kind === "banned" ? setConfirmBan(v) : save(v).catch(() => undefined)));
 
   return (
     <Dialog open onOpenChange={(o) => !o && !pending && onClose()}>

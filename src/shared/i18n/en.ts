@@ -96,6 +96,7 @@ export const en = {
     postViews: "Post views",
     diagramViews: "Diagram views",
     pageViews: "Page views",
+    readHours: "Hours read",
     visitors: "Unique visitors",
     posts: "Posts",
     diagrams: "Public diagrams",
@@ -183,6 +184,7 @@ export const en = {
     sourcePublic: "Published (all authors)",
     sourceDraft: "My drafts",
     sourceScheduled: "My scheduled",
+    sourceUnlisted: "Unlisted",
   },
   categories: {
     title: "Categories",
@@ -192,6 +194,10 @@ export const en = {
     deleteBody: "Posts keep existing but lose this category.",
     empty: "No categories yet.",
     tooLong: "At most 50 characters",
+    slug: "Slug",
+    parent: "Parent category",
+    noParent: "No parent (top level)",
+    badSlug: "Lowercase letters, digits and dashes",
   },
   labels: {
     title: "Labels",
@@ -426,6 +432,7 @@ export const en = {
     nameRequired: "Name is required",
     priorityRequired: "Priority must be a whole number",
     fieldRequired: "Field is required",
+    valueRequired: "Value is required",
   },
   sessions: {
     title: "Sessions",
@@ -599,7 +606,6 @@ export const en = {
     bulkDeletePosts: "Delete {n} posts?",
     bulkDeletePostsBody: "The selected posts are removed permanently.",
     createFirstPost: "Create the first post to get started.",
-    ownHint: "My drafts and scheduled lists only support the source filter.",
     deleteComment: "Delete comment",
     deleteComments: "Delete comments",
     commentDeleted: "Comment #{id} deleted",

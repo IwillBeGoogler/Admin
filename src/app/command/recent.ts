@@ -20,5 +20,12 @@ export const pushRecent = (path: string) => {
   } catch {}
 };
 
+/** Forget the history (on logout: it must not leak to the next account). */
+export const clearRecent = () => {
+  try {
+    localStorage.removeItem(KEY);
+  } catch {}
+};
+
 /** Snapshot taken when the palette mounts (it remounts on every open). */
 export const useRecent = () => useState(readRecent)[0];

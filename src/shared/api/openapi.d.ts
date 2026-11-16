@@ -2420,6 +2420,8 @@ export interface components {
         Status: "draft" | "scheduled" | "published" | "unlisted";
         categoryInput: {
             name?: string;
+            parent_id?: number;
+            slug?: string;
         };
         commentEdit: {
             text?: string;

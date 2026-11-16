@@ -217,7 +217,7 @@ export function SessionsPage() {
 export function SessionDetailPage({ id, userId }: { id: string; userId?: number | undefined }) {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const mine = useMySessions();
+  const mine = useMySessions(!userId);
   const theirs = useUserSessions(userId ?? null);
   const q = userId ? theirs : mine;
   const revoke = useRevokeMySession();

@@ -7,6 +7,11 @@ describe("taxonomy rules", () => {
     expect(categoryInputSchema.safeParse({ name: "x".repeat(51) }).success).toBe(false);
     expect(categoryInputSchema.parse({ name: " Go " }).name).toBe("Go");
   });
+  it("category slug: optional, lowercase latin words joined by dashes", () => {
+    expect(categoryInputSchema.parse({ name: "Go" })).toMatchObject({ slug: "", parent_id: 0 });
+    expect(categoryInputSchema.parse({ name: "Go", slug: " System-Design " }).slug).toBe("system-design");
+    expect(categoryInputSchema.safeParse({ name: "Go", slug: "тест" }).success).toBe(false);
+  });
   it("label: name <= 30, color #rrggbb lowercased", () => {
     expect(labelInputSchema.safeParse({ name: "a", color: "red" }).success).toBe(false);
     expect(labelInputSchema.safeParse({ name: "x".repeat(31), color: "#000000" }).success).toBe(false);

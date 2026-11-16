@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { createColumnHelper } from "@tanstack/react-table";
 import { CheckIcon, XIcon } from "lucide-react";
 import { useRef, useState } from "react";
+import { usePermissions } from "@/contexts/identity";
 import { errorMessage, isApiError } from "@/shared/http";
 import { type MessageKey, useI18n } from "@/shared/i18n";
 import { formatBadgeCount } from "@/shared/lib/format";
@@ -247,6 +248,15 @@ const reportReasonKey = (r: string) =>
 function DecideDialog({ report, status, onClose }: { report: Report; status: Decision; onClose: () => void }) {
   const { t } = useI18n();
   const decide = useDecideReport();
+  const { can } = usePermissions();
+  // removing is a second action with its own permission: offer it only to someone who may do it
+  const mayRemove = can(
+    report.target_type === "post"
+      ? "post.delete"
+      : report.target_type === "comment"
+        ? "comment.delete"
+        : "diagrams.manage",
+  );
   const [remove, setRemove] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const action = t(status === "resolved" ? "reports.resolve" : "reports.dismiss");
@@ -285,7 +295,7 @@ function DecideDialog({ report, status, onClose }: { report: Report; status: Dec
         <DialogDescription>
           <Target r={report} /> · {report.note || "—"}
         </DialogDescription>
-        {canRemoveContent(report, status) ? (
+        {canRemoveContent(report, status) && mayRemove ? (
           <label className="flex items-center gap-2 text-sm">
             <Checkbox checked={remove} disabled={pending} onChange={(e) => setRemove(e.target.checked)} />
             {t("reports.removeContent")}

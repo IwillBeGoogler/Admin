@@ -4,7 +4,7 @@
 // `enum` (older specs had one); we sanitise a copy (the spec itself is untouched).
 // openapi-typescript needs the TypeScript 5 JS API (TS 7 is native-only), so it runs
 // from tools/openapi, an isolated package that pins typescript@5 for the generator only.
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -29,8 +29,7 @@ const fix = (node: unknown): unknown => {
   return node;
 };
 
-const dir = join(tmpdir(), "admin-openapi");
-mkdirSync(dir, { recursive: true });
+const dir = mkdtempSync(join(tmpdir(), "admin-openapi-")); // private per run: a shared /tmp path can be pre-created by anyone
 const input = join(dir, "openapi.json");
 writeFileSync(input, JSON.stringify(fix(spec)));
 const out = fileURLToPath(new URL("../src/shared/api/openapi.d.ts", import.meta.url));

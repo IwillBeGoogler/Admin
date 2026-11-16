@@ -51,7 +51,6 @@ export function PostsPage({
   const [bulkOpen, setBulkOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const runBulk = useBulkRunner<Post>((p) => String(p.id), setSelected);
-  const own = filters.source === "draft" || filters.source === "scheduled";
   const catName = new Map((categories.data ?? []).map((c) => [c.id, c.name]));
   const labelName = new Map((labels.data ?? []).map((l) => [l.id, l.name]));
   /** Same rule as the row's delete button. */
@@ -132,7 +131,15 @@ export function PostsPage({
   const items = posts.data?.pages.flatMap((p) => p.items) ?? [];
   const selectedRows = items.filter((p) => selected.has(String(p.id)) && canDelete(p));
   const sourceLabel = (s: PostSource) =>
-    t(s === "public" ? "posts.sourcePublic" : s === "draft" ? "posts.sourceDraft" : "posts.sourceScheduled");
+    t(
+      s === "public"
+        ? "posts.sourcePublic"
+        : s === "draft"
+          ? "posts.sourceDraft"
+          : s === "unlisted"
+            ? "posts.sourceUnlisted"
+            : "posts.sourceScheduled",
+    );
   const chips = (
     [
       filters.q ? { id: "q", name: t("common.search"), value: filters.q, onRemove: () => set({ q: undefined }) } : null,
@@ -208,14 +215,7 @@ export function PostsPage({
             <search className="grid gap-3 border-b border-border p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-5">
               <div className="grid gap-1.5 lg:col-span-2">
                 <Label htmlFor="posts-q">{t("common.search")}</Label>
-                <SearchInput
-                  id="posts-q"
-                  placeholder={t("posts.search")}
-                  value={q}
-                  disabled={own}
-                  aria-describedby={own ? "posts-own-hint" : undefined}
-                  onValueChange={setQ}
-                />
+                <SearchInput id="posts-q" placeholder={t("posts.search")} value={q} onValueChange={setQ} />
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="posts-source">{t("posts.source")}</Label>
@@ -237,8 +237,6 @@ export function PostsPage({
                 <Label htmlFor="posts-category">{t("posts.category")}</Label>
                 <Select
                   id="posts-category"
-                  disabled={own}
-                  aria-describedby={own ? "posts-own-hint" : undefined}
                   value={filters.category ?? ""}
                   onChange={(e) => set({ category: e.target.value ? Number(e.target.value) : undefined })}
                 >
@@ -254,8 +252,6 @@ export function PostsPage({
                 <Label htmlFor="posts-label">{t("posts.label")}</Label>
                 <Select
                   id="posts-label"
-                  disabled={own}
-                  aria-describedby={own ? "posts-own-hint" : undefined}
                   value={filters.label ?? ""}
                   onChange={(e) => set({ label: e.target.value ? Number(e.target.value) : undefined })}
                 >
@@ -267,11 +263,6 @@ export function PostsPage({
                   ))}
                 </Select>
               </div>
-              {own ? (
-                <p id="posts-own-hint" className="text-xs text-muted-foreground lg:col-span-5">
-                  {t("confirm.ownHint")}
-                </p>
-              ) : null}
             </search>
             <FilterChips chips={chips} onReset={clearFilters} />
           </>

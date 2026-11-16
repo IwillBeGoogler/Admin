@@ -9,6 +9,7 @@ import {
 import { nextPageRequest, type PageRequest } from "@/shared/http";
 import type { GlossaryPayload } from "../domain/glossary";
 import type { DraftPayload, PostFilters } from "../domain/post";
+import type { CategoryInput } from "../domain/taxonomy";
 import { sortTags } from "../domain/taxonomy";
 import {
   categoryRepository,
@@ -117,7 +118,7 @@ export const useTags = () => useQuery(tagsQuery());
 export function useCreateCategory() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (name: string) => categoryRepository.create(name),
+    mutationFn: (input: CategoryInput) => categoryRepository.create(input),
     onSuccess: () => qc.invalidateQueries({ queryKey: contentKeys.categories() }),
   });
 }

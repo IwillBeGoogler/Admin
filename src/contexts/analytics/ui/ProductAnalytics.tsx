@@ -34,7 +34,7 @@ export function ProductAnalytics() {
   const r = q.data;
   const n = (v: number) => formatNumber(v, locale);
   const daily = r ? r.dau.map((d, i) => ({ day: d.day, dau: d.count, signups: r.signups[i]?.count ?? 0 })) : [];
-  const empty = r && r.mau === 0 && r.funnel.every((f) => f.count === 0);
+  const empty = r && r.mau === 0 && r.dau.every((d) => d.count === 0) && r.funnel.every((f) => f.count === 0);
 
   return (
     <section aria-labelledby="product-title" className="grid gap-4">

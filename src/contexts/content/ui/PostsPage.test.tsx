@@ -47,7 +47,7 @@ describe("PostsPage", () => {
     expect(deleted).toBe(true);
   });
 
-  it("drafts source disables public-only filters", async () => {
+  it("drafts source keeps the search and taxonomy filters enabled", async () => {
     signIn();
     server.use(
       ...taxonomy(),
@@ -55,7 +55,7 @@ describe("PostsPage", () => {
     );
     await renderRouted(<PostsPage filters={{ source: "draft" }} onFiltersChange={() => {}} />);
     expect(await screen.findByText("Draft")).toBeInTheDocument();
-    expect(screen.getByLabelText("Category")).toBeDisabled();
+    expect(screen.getByLabelText("Category")).toBeEnabled();
   });
 
   it("shows error with retry", async () => {
@@ -90,18 +90,6 @@ describe("PostsPage", () => {
     expect(onFiltersChange).toHaveBeenLastCalledWith({ category: 1, sort: "-views", tag: undefined });
     await user.click(screen.getByRole("button", { name: "Clear filters" }));
     expect(onFiltersChange).toHaveBeenLastCalledWith({ sort: "-views" });
-  });
-
-  it("explains why filters are disabled for own drafts", async () => {
-    signIn();
-    server.use(
-      ...taxonomy(),
-      http.get(api("/admin/posts"), () => page([])),
-    );
-    await renderRouted(<PostsPage filters={{ source: "draft" }} onFiltersChange={() => {}} />);
-    expect(await screen.findByLabelText("Category")).toHaveAccessibleDescription(
-      "My drafts and scheduled lists only support the source filter.",
-    );
   });
 
   it("only posts the operator may delete are selectable", async () => {

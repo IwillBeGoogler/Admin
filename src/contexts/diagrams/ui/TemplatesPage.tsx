@@ -124,7 +124,7 @@ export function TemplatesPage() {
                         variant="ghost"
                         size="icon"
                         aria-label={`${t("templates.moveUp")}: ${tpl.title}`}
-                        disabled={i === 0 || update.isPending}
+                        disabled={i === 0 || reorder.isPending}
                         onClick={() => void move(i, -1)}
                       >
                         <ArrowUpIcon aria-hidden />
@@ -133,7 +133,7 @@ export function TemplatesPage() {
                         variant="ghost"
                         size="icon"
                         aria-label={`${t("templates.moveDown")}: ${tpl.title}`}
-                        disabled={i === rows.length - 1 || update.isPending}
+                        disabled={i === rows.length - 1 || reorder.isPending}
                         onClick={() => void move(i, 1)}
                       >
                         <ArrowDownIcon aria-hidden />

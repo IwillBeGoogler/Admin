@@ -1,6 +1,7 @@
 import { keepPreviousData, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { analyticsKeys } from "@/contexts/analytics";
 import { contentKeys } from "@/contexts/content";
+import { diagramKeys } from "@/contexts/diagrams";
 import { nextPageRequest, type PageRequest } from "@/shared/http";
 import type { ClientError, ClientErrorStatus, ClientErrorsSearch } from "../domain/clientError";
 import type { Feedback, FeedbackSearch, FeedbackStatus } from "../domain/feedback";
@@ -57,15 +58,20 @@ export function useDecideReport() {
       reportRepository.decide(report.id, decisionPayload(report, status, removeContent)),
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: moderationKeys.reports() });
+      void qc.invalidateQueries({ queryKey: moderationKeys.comments() }); // removed content may be a comment
+      void qc.invalidateQueries({ queryKey: diagramKeys.all }); // ...or a diagram
       void qc.invalidateQueries({ queryKey: contentKeys.all });
       void qc.invalidateQueries({ queryKey: analyticsKeys.all });
     },
   });
 }
 
+/** sort is applied on the loaded rows: it must not change the query key (a refetch that resets paging). */
+const withoutSort = <T extends { sort?: string | undefined }>(s: T): T => ({ ...s, sort: undefined });
+
 export const useFeedback = (s: FeedbackSearch) =>
   useInfiniteQuery({
-    queryKey: moderationKeys.feedback(s),
+    queryKey: moderationKeys.feedback(withoutSort(s)),
     queryFn: ({ pageParam, signal }) => feedbackRepository.list(s, pageParam, signal),
     initialPageParam: { limit: PAGE } as PageRequest,
     getNextPageParam: (last) => nextPageRequest(last.meta, PAGE),
@@ -83,7 +89,7 @@ export function useDecideFeedback() {
 
 export const useClientErrors = (s: ClientErrorsSearch) =>
   useInfiniteQuery({
-    queryKey: moderationKeys.clientErrors(s),
+    queryKey: moderationKeys.clientErrors(withoutSort(s)),
     queryFn: ({ pageParam, signal }) => clientErrorRepository.list(s, pageParam, signal),
     initialPageParam: { limit: PAGE } as PageRequest,
     getNextPageParam: (last) => nextPageRequest(last.meta, PAGE),

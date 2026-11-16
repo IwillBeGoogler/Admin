@@ -98,6 +98,7 @@ export const ru: Dict = {
     postViews: "Просмотры статей",
     diagramViews: "Просмотры диаграмм",
     pageViews: "Просмотры страниц",
+    readHours: "Часов чтения",
     visitors: "Уникальные посетители",
     posts: "Статьи",
     diagrams: "Публичные диаграммы",
@@ -185,6 +186,7 @@ export const ru: Dict = {
     sourcePublic: "Опубликованные (все авторы)",
     sourceDraft: "Мои черновики",
     sourceScheduled: "Мои запланированные",
+    sourceUnlisted: "По ссылке",
   },
   categories: {
     title: "Категории",
@@ -194,6 +196,10 @@ export const ru: Dict = {
     deleteBody: "Статьи останутся без категории.",
     empty: "Категорий нет.",
     tooLong: "Не более 50 символов",
+    slug: "Слаг",
+    parent: "Родительская категория",
+    noParent: "Без родителя (верхний уровень)",
+    badSlug: "Строчные латинские буквы, цифры и дефисы",
   },
   labels: {
     title: "Метки",
@@ -428,6 +434,7 @@ export const ru: Dict = {
     nameRequired: "Имя обязательно",
     priorityRequired: "Приоритет — целое число",
     fieldRequired: "Поле обязательно",
+    valueRequired: "Значение обязательно",
   },
   sessions: {
     title: "Сессии",
@@ -601,7 +608,6 @@ export const ru: Dict = {
     bulkDeletePosts: "Удалить посты: {n}?",
     bulkDeletePostsBody: "Выбранные посты будут удалены безвозвратно.",
     createFirstPost: "Создайте первый пост, чтобы начать.",
-    ownHint: "Списки моих черновиков и запланированных поддерживают только фильтр источника.",
     deleteComment: "Удалить комментарий",
     deleteComments: "Удалить комментарии",
     commentDeleted: "Комментарий #{id} удалён",

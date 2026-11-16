@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { ApiError } from "@/shared/http/problem";
 import { useI18n } from "@/shared/i18n";
 import { ErrorState } from "@/shared/ui/states";
 import { usePermissions } from "../application/session";
@@ -17,7 +18,11 @@ export function RequirePermission({
   const { canAny } = usePermissions();
   const { t } = useI18n();
   if (canAny(anyOf)) return children;
-  return fallback === undefined ? <ErrorState error={new Error(t("common.forbidden"))} /> : fallback;
+  return fallback === undefined ? (
+    <ErrorState error={new ApiError(403, { detail: t("common.forbidden") })} />
+  ) : (
+    fallback
+  );
 }
 
 /** Inline variant for buttons and menu items. */

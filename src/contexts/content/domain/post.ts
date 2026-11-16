@@ -139,7 +139,7 @@ export const toDraftPayload = (f: PostForm): DraftPayload => ({
 });
 
 /** Which list the posts table shows: the public feed or the admin's own drafts. */
-export const postSources = ["public", "draft", "scheduled"] as const;
+export const postSources = ["public", "draft", "scheduled", "unlisted"] as const;
 export type PostSource = (typeof postSources)[number];
 
 export const postFiltersSchema = z.object({

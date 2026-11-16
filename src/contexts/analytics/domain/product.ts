@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { list } from "@/shared/http/envelope";
 
 const dayCount = z.object({ day: z.string(), count: z.number() });
 const keyCount = z.object({ key: z.string(), count: z.number() });
@@ -6,18 +7,18 @@ const keyCount = z.object({ key: z.string(), count: z.number() });
 /** GET /admin/analytics: DAU, funnel, retention and read time. */
 export const productReportSchema = z.object({
   days: z.number(),
-  dau: z.array(dayCount).default([]),
+  dau: list(dayCount),
   wau: z.number().default(0),
   mau: z.number().default(0),
-  signups: z.array(dayCount).default([]),
+  signups: list(dayCount),
   avg_read_seconds: z.number().default(0),
   total_read_hours: z.number().default(0),
-  funnel: z.array(z.object({ step: z.string(), count: z.number() })).default([]),
+  funnel: list(z.object({ step: z.string(), count: z.number() })),
   retention: z
     .object({ cohort: z.number(), d1: z.number(), d7: z.number(), d30: z.number() })
     .default({ cohort: 0, d1: 0, d7: 0, d30: 0 }),
-  top_paths: z.array(keyCount).default([]),
-  languages: z.array(keyCount).default([]),
+  top_paths: list(keyCount),
+  languages: list(keyCount),
 });
 export type ProductReport = z.infer<typeof productReportSchema>;
 

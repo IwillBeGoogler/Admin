@@ -98,6 +98,7 @@ export const uz: Dict = {
     postViews: "Maqola ko'rishlari",
     diagramViews: "Diagramma ko'rishlari",
     pageViews: "Sahifa ko'rishlari",
+    readHours: "O‘qilgan soat",
     visitors: "Noyob tashrifchilar",
     posts: "Maqolalar",
     diagrams: "Ommaviy diagrammalar",
@@ -185,6 +186,7 @@ export const uz: Dict = {
     sourcePublic: "Chop etilgan (barcha mualliflar)",
     sourceDraft: "Mening qoralamalarim",
     sourceScheduled: "Mening rejalashtirilganlarim",
+    sourceUnlisted: "Havola orqali",
   },
   categories: {
     title: "Kategoriyalar",
@@ -194,6 +196,10 @@ export const uz: Dict = {
     deleteBody: "Maqolalar qoladi, lekin kategoriyasiz.",
     empty: "Kategoriyalar yo'q.",
     tooLong: "Ko'pi bilan 50 belgi",
+    slug: "Slug",
+    parent: "Ota kategoriya",
+    noParent: "Otasiz (yuqori daraja)",
+    badSlug: "Kichik lotin harflari, raqamlar va chiziqchalar",
   },
   labels: {
     title: "Belgilar",
@@ -429,6 +435,7 @@ export const uz: Dict = {
     nameRequired: "Nom majburiy",
     priorityRequired: "Prioritet butun son bo'lsin",
     fieldRequired: "Maydon majburiy",
+    valueRequired: "Qiymat majburiy",
   },
   sessions: {
     title: "Sessiyalar",
@@ -607,7 +614,6 @@ export const uz: Dict = {
     bulkDeletePosts: "{n} ta post o'chirilsinmi?",
     bulkDeletePostsBody: "Tanlangan postlar butunlay o'chiriladi.",
     createFirstPost: "Boshlash uchun birinchi postni yarating.",
-    ownHint: "Mening qoralamalarim va rejalashtirilganlar ro'yxati faqat manba filtrini qo'llaydi.",
     deleteComment: "Izohni o'chirish",
     deleteComments: "Izohlarni o'chirish",
     commentDeleted: "#{id} izoh o'chirildi",

@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useBlocker } from "@tanstack/react-router";
 import { ArrowLeftIcon, HistoryIcon } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { isApiError } from "@/shared/http";
 import { type MessageKey, useI18n } from "@/shared/i18n";
@@ -85,17 +85,47 @@ export function NewPostDialog({
   onSaved: (id: number) => void;
 }) {
   const { t } = useI18n();
+  const [dirty, setDirty] = useState(false);
+  const [confirmClose, setConfirmClose] = useState(false);
+  const close = (o: boolean) => {
+    if (!o && dirty)
+      setConfirmClose(true); // Esc / X / overlay must not drop unsaved text silently
+    else onOpenChange(o);
+  };
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl" closeLabel={t("common.close")} aria-describedby={undefined}>
-        <DialogTitle>{t("posts.new")}</DialogTitle>
-        {open ? <EditorForm post={undefined} onSaved={onSaved} /> : null}
-      </DialogContent>
-    </Dialog>
+    <>
+      <Dialog open={open} onOpenChange={close}>
+        <DialogContent className="max-w-4xl" closeLabel={t("common.close")} aria-describedby={undefined}>
+          <DialogTitle>{t("posts.new")}</DialogTitle>
+          {open ? <EditorForm post={undefined} onSaved={onSaved} onDirtyChange={setDirty} /> : null}
+        </DialogContent>
+      </Dialog>
+      <ConfirmDialog
+        open={confirmClose}
+        onOpenChange={setConfirmClose}
+        title={t("editor.discardTitle")}
+        description={t("editor.discardBody")}
+        confirmLabel={t("editor.discard")}
+        cancelLabel={t("editor.keepEditing")}
+        onConfirm={() => {
+          setDirty(false);
+          setConfirmClose(false);
+          onOpenChange(false);
+        }}
+      />
+    </>
   );
 }
 
-function EditorForm({ post, onSaved }: { post: Post | undefined; onSaved: (id: number) => void }) {
+function EditorForm({
+  post,
+  onSaved,
+  onDirtyChange,
+}: {
+  post: Post | undefined;
+  onSaved: (id: number) => void;
+  onDirtyChange?: (dirty: boolean) => void;
+}) {
   const { t } = useI18n();
   const categories = useCategories();
   const labels = useLabels();
@@ -108,6 +138,10 @@ function EditorForm({ post, onSaved }: { post: Post | undefined; onSaved: (id: n
   const msg = (k?: string) => (k ? t(k as MessageKey) : undefined);
   const status = form.watch("status");
   const dirty = form.formState.isDirty;
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+    return () => onDirtyChange?.(false);
+  }, [dirty, onDirtyChange]);
   const bodyRef = useRef<HTMLTextAreaElement | null>(null);
   const bodyReg = form.register("body");
   /** Set once a save succeeds so the follow-up navigation is not blocked. */
@@ -135,9 +169,10 @@ function EditorForm({ post, onSaved }: { post: Post | undefined; onSaved: (id: n
   });
 
   useHotkeys({
-    [key("save")]: { allowInInput: true, handler: () => void submit() },
+    [key("save")]: { allowInInput: true, allowInDialog: true, handler: () => void submit() },
     [key("publish")]: {
       allowInInput: true,
+      allowInDialog: true,
       handler: () => {
         form.setValue("status", "published", { shouldDirty: true });
         void submit();

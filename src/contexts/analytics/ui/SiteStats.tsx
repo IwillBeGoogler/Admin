@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { EmptyState, ErrorState } from "@/shared/ui/states";
 import { useSiteStats } from "../application/queries";
+import { readTime } from "../domain/product";
 import { noViews } from "../domain/siteStats";
 
 const ViewsChart = lazy(() => import("./Charts").then((m) => ({ default: m.ViewsChart })));
@@ -16,6 +17,7 @@ const totals = [
   { key: "posts", label: "posts" },
   { key: "diagrams", label: "diagrams" },
   { key: "users", label: "users" },
+  { key: "read_seconds", label: "readHours" },
 ] as const;
 
 /** Post and diagram views, site totals and top lists from GET /admin/stats/site. */
@@ -45,13 +47,15 @@ export function SiteStats() {
         <EmptyState title={t("site.empty")} />
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="grid gap-4 sm:grid-cols-4 lg:grid-cols-7">
             {totals.map((c) => (
               <Card key={c.key}>
                 <CardContent className="grid gap-1 pt-5">
                   <p className="text-sm text-muted-foreground">{t(`site.${c.label}`)}</p>
                   {s ? (
-                    <p className="text-2xl font-semibold tabular-nums">{n(s.totals[c.key])}</p>
+                    <p className="text-2xl font-semibold tabular-nums">
+                      {c.key === "read_seconds" ? n(Math.round(s.totals.read_seconds / 360) / 10) : n(s.totals[c.key])}
+                    </p>
                   ) : (
                     <Skeleton className="h-8 w-16" />
                   )}
@@ -94,7 +98,12 @@ export function SiteStats() {
                       <span className="truncate">
                         {p.title} <span className="text-muted-foreground">@{p.author}</span>
                       </span>
-                      <span className="tabular-nums">{n(p.views)}</span>
+                      <span className="shrink-0 tabular-nums">
+                        {n(p.views)}
+                        {p.avg_read_seconds > 0 ? (
+                          <span className="ml-2 text-muted-foreground">{readTime(p.avg_read_seconds)}</span>
+                        ) : null}
+                      </span>
                     </li>
                   ))}
                 </ol>

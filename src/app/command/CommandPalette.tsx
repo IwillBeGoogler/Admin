@@ -92,7 +92,11 @@ export function CommandPalette({ onOpenChange }: { onOpenChange: (open: boolean)
   };
   const go = (path: string) => run(() => router.history.push(path));
   const recentItems = recent.flatMap((path) => {
-    const match = allItems.find((i) => i.to === path);
+    // match on the route, ignoring ?query / #hash and sub-paths (/roles/x belongs to /roles)
+    const route = path.split(/[?#]/)[0] ?? path;
+    const match = allItems
+      .filter((i) => route === i.to || (i.to !== "/" && route.startsWith(`${i.to}/`)))
+      .sort((a, b) => b.to.length - a.to.length)[0];
     if (match && !visibleItems.includes(match)) return [];
     return [{ path, label: match ? t(match.label) : path }];
   });

@@ -17,7 +17,7 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: ["src/**/*.{ts,tsx}"],
-      exclude: ["**/*.test.*", "src/test/**", "src/**/*.d.ts", "src/routeTree.gen.ts", "src/main.tsx"],
+      exclude: ["**/*.test.*", "src/test/**", "src/**/*.d.ts", "src/app/routeTree.gen.ts", "src/main.tsx"],
       // shards (CI) only collect: the 95% floor is applied once on the merged report
       thresholds: process.env.VITEST_SHARD ? undefined : { statements: 95, branches: 95, functions: 95, lines: 95 },
     },

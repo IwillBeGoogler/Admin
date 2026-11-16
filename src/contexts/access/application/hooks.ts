@@ -21,10 +21,11 @@ export const accessKeys = {
   audit: (s: AuditSearch) => [...accessKeys.all, "audit", s] as const,
 };
 
-export const useRoles = () =>
-  useQuery({ queryKey: accessKeys.roles(), queryFn: ({ signal }) => roleRepository.list(signal) });
-export const usePermissionList = () =>
+export const useRoles = (enabled = true) =>
+  useQuery({ queryKey: accessKeys.roles(), queryFn: ({ signal }) => roleRepository.list(signal), enabled });
+export const usePermissionList = (enabled = true) =>
   useQuery({
+    enabled,
     queryKey: accessKeys.permissions(),
     queryFn: ({ signal }) => permissionRepository.list(signal),
     staleTime: 5 * 60_000,
@@ -78,8 +79,9 @@ export const useSavePolicy = () =>
   );
 export const useDeletePolicy = () => usePolicyMutation((id: string) => policyRepository.remove(id));
 
-export const useMySessions = () =>
+export const useMySessions = (enabled = true) =>
   useQuery({
+    enabled,
     queryKey: accessKeys.mySessions(),
     queryFn: async ({ signal }) => sortSessions(await sessionRepository.mine(signal)),
   });

@@ -11,7 +11,7 @@ import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { ConfirmDialog, Dialog, DialogContent, DialogTitle } from "@/shared/ui/dialog";
 import { Field } from "@/shared/ui/field";
-import { Input } from "@/shared/ui/input";
+import { Input, Select } from "@/shared/ui/input";
 import { ListView } from "@/shared/ui/list-view";
 import { PageHeader } from "@/shared/ui/states";
 import { Table, TBody, TD, TH, THead, TR } from "@/shared/ui/table";
@@ -24,7 +24,13 @@ import {
   useLabels,
   useTags,
 } from "../application/hooks";
-import { type CategoryInput, categoryInputSchema, type LabelInput, labelInputSchema } from "../domain/taxonomy";
+import {
+  type CategoryForm,
+  type CategoryInput,
+  categoryInputSchema,
+  type LabelInput,
+  labelInputSchema,
+} from "../domain/taxonomy";
 
 function useDeleteConfirm<T>() {
   const [target, setTarget] = useState<T | null>(null);
@@ -38,10 +44,13 @@ export function CategoriesPage() {
   const del = useDeleteCategory();
   const confirm = useDeleteConfirm<{ id: number; name: string }>();
   const [creating, setCreating] = useState(false);
-  const form = useForm<CategoryInput>({ resolver: zodResolver(categoryInputSchema), defaultValues: { name: "" } });
+  const form = useForm<CategoryForm, unknown, CategoryInput>({
+    resolver: zodResolver(categoryInputSchema),
+    defaultValues: { name: "", slug: "", parent_id: 0 },
+  });
   const err = form.formState.errors.name?.message;
   const submit = form.handleSubmit((v) =>
-    create.mutate(v.name, {
+    create.mutate(v, {
       onSuccess: () => {
         notifySuccess(t("common.saved"));
         form.reset();
@@ -73,6 +82,24 @@ export function CategoriesPage() {
           <form onSubmit={submit} noValidate className="grid gap-3">
             <Field label={t("common.name")} error={err && t(err as MessageKey)}>
               {(a) => <Input {...a} {...form.register("name")} autoFocus />}
+            </Field>
+            <Field
+              label={t("categories.slug")}
+              error={form.formState.errors.slug?.message && t(form.formState.errors.slug.message as MessageKey)}
+            >
+              {(a) => <Input {...a} {...form.register("slug")} placeholder="system-design" />}
+            </Field>
+            <Field label={t("categories.parent")}>
+              {(a) => (
+                <Select {...a} {...form.register("parent_id", { valueAsNumber: true })}>
+                  <option value={0}>{t("categories.noParent")}</option>
+                  {(q.data ?? []).map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </Select>
+              )}
             </Field>
             <Button type="submit" disabled={create.isPending}>
               <PlusIcon aria-hidden />

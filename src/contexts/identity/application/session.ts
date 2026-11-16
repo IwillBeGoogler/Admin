@@ -1,5 +1,6 @@
 import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSyncExternalStore } from "react";
+import { clearRecent } from "@/app/command/recent";
 import { tokens } from "@/shared/api";
 import { canAny, can as canDo, type PermissionCode } from "../domain/permissions";
 import type { LoginInput, Session } from "../domain/session";
@@ -50,6 +51,7 @@ export function useLogout() {
     onSettled: () => {
       tokens.set(null);
       qc.clear();
+      clearRecent();
     },
   });
 }

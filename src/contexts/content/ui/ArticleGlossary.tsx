@@ -60,12 +60,12 @@ export function ArticleGlossary({
     if (issue) return setError(t(issue as MessageKey));
     const clean = {
       term: entry.term.trim(),
-      aliases: parseAliases(entry.aliases).join(", "),
+      aliases: parseAliases(entry.aliases, entry.term).join(", "),
       definition: entry.definition.trim(),
     };
     if (global) {
       saveGlobal.mutate(
-        { term: clean.term, aliases: parseAliases(clean.aliases), definition: clean.definition, lang },
+        { term: clean.term, aliases: parseAliases(clean.aliases, clean.term), definition: clean.definition, lang },
         {
           onSuccess: () => {
             notifySuccess(t("glossary.addedGlobal"));

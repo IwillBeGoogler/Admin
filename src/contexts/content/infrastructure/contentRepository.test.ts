@@ -159,7 +159,7 @@ describe("taxonomy repositories", () => {
       http.delete(api("/categories/2"), () => new HttpResponse(null, { status: 204 })),
     );
     expect((await categoryRepository.list())[0]?.count).toBe(3);
-    expect((await categoryRepository.create("Go")).name).toBe("Go");
+    expect((await categoryRepository.create({ name: "Go", slug: "", parent_id: 0 })).name).toBe("Go");
     await categoryRepository.remove(2);
   });
   it("labels send {name,color}", async () => {

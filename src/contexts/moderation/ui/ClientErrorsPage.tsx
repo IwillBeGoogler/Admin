@@ -117,6 +117,7 @@ export function ClientErrorsPage({
             sort={parseSort(search.sort)}
             onSortChange={(s) => onSearchChange({ ...search, sort: serializeSort(s) })}
             rowLabel={(r) => `#${r.id}`}
+            hotkeys
           />
         )}
       </ListView>

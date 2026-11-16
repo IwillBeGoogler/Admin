@@ -4,6 +4,7 @@ import { dataEnvelope, list, type Page, type PageRequest, pageEnvelope } from "@
 import { type GlossaryPayload, type GlossaryTerm, glossaryTermSchema } from "../domain/glossary";
 import { type DraftPayload, type Label, labelSchema, type Post, type PostFilters, postSchema } from "../domain/post";
 import { type Revision, type RevisionDetail, revisionDetailSchema, revisionSchema } from "../domain/revision";
+import type { CategoryInput } from "../domain/taxonomy";
 import { type Category, categorySchema, type Tag, tagSchema } from "../domain/taxonomy";
 
 type S = ApiSchemas["schemas"];
@@ -14,7 +15,7 @@ export const postRepository = {
   /** Public feed, or every author's drafts/scheduled posts (needs post.read_draft). */
   list(filters: PostFilters, page: PageRequest, signal?: AbortSignal): Promise<Page<Post>> {
     const paging = { page: page.page, limit: page.limit ?? 20, cursor: page.cursor };
-    if (filters.source === "draft" || filters.source === "scheduled")
+    if (filters.source === "draft" || filters.source === "scheduled" || filters.source === "unlisted")
       return http("/admin/posts", {
         query: {
           status: filters.source,
@@ -52,8 +53,12 @@ export const postRepository = {
 export const categoryRepository = {
   list: async (signal?: AbortSignal): Promise<Category[]> =>
     (await http("/categories", { schema: many(categorySchema), signal })).data,
-  create: async (name: string): Promise<Category> => {
-    const body: S["categoryInput"] = { name };
+  create: async (input: CategoryInput): Promise<Category> => {
+    const body: S["categoryInput"] = {
+      name: input.name,
+      ...(input.slug ? { slug: input.slug } : {}),
+      ...(input.parent_id ? { parent_id: input.parent_id } : {}),
+    };
     return (await http("/categories", { method: "POST", body, schema: dataEnvelope(categorySchema) })).data;
   },
   remove: async (id: number): Promise<void> => void (await http(`/categories/${id}`, { method: "DELETE" })),

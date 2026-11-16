@@ -199,7 +199,8 @@ function PolicyForm({ policy, onDone }: { policy: Policy | null; onDone: () => v
   const e = form.formState.errors;
   const msg = (m?: string) => (m ? t(m as MessageKey) : undefined);
   const nested = nestedGroups(policy);
-  const roles = useRoles();
+  const { can } = usePermissions();
+  const roles = useRoles(can("role.read"));
   const picked = form.watch("roles");
   const togglePick = (name: string) =>
     form.setValue("roles", picked.includes(name) ? picked.filter((r) => r !== name) : [...picked, name], {

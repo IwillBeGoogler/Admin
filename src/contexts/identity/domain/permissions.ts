@@ -48,6 +48,13 @@ export const ADMIN_PERMISSIONS = [
   "diagrams.read",
   "diagrams.manage",
   "templates.manage",
+  "post.update",
+  "post.delete",
+  "post.read_draft",
+  "permission.read",
+  "role.write",
+  "policy.write",
+  "session.revoke",
 ] as const satisfies readonly PermissionCode[];
 
 export const isAdmin = (p: PermissionSet) => canAny(p, ADMIN_PERMISSIONS);

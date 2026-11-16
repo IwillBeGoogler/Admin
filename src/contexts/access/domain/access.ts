@@ -144,7 +144,8 @@ export const policyInputSchema = z.object({
     z.object({
       field: z.string().trim().min(1, "policies.fieldRequired"),
       operator: z.enum(policyOperators),
-      value: z.string(),
+      // an empty value makes `not_in []` match everyone: refuse it
+      value: z.string().refine((v) => v.split(",").some((s) => s.trim() !== ""), "policies.valueRequired"),
     }),
   ),
 });
@@ -219,6 +220,7 @@ export const policyTemplates = {
     action: "access",
     effect: "deny",
     priority: 1,
+    enabled: false, // never live until an IP list is filled in
     match: "and",
     negate: false,
     conditions: [{ field: "env.ip", operator: "not_in", value: "" }],
