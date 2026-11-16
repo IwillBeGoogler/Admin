@@ -22,8 +22,9 @@ test.describe
       // category create
       await page.getByRole("link", { name: "Categories" }).first().click();
       const cat = `E2E ${suffix}`;
-      await page.getByLabel("New category").fill(cat);
-      await page.getByRole("button", { name: "Create" }).click();
+      await page.getByRole("button", { name: "New category" }).click();
+      await page.getByLabel("Name").fill(cat);
+      await page.getByRole("dialog").getByRole("button", { name: "Create" }).click();
       await expect(page.getByRole("link", { name: cat })).toBeVisible();
 
       // create a published post in that category

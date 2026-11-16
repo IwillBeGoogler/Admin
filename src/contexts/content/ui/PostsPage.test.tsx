@@ -266,4 +266,27 @@ describe("PostsPage", () => {
     expect(await screen.findByText("No posts match these filters.")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "New post" })).toBeNull();
   });
+
+  it("opens NewPostDialog from empty state and navigates on save; sorts by Category", async () => {
+    signIn();
+    let empty = true;
+    server.use(
+      ...taxonomy(),
+      http.get(api("/posts"), () => page(empty ? [] : [post()])),
+      http.post(api("/posts"), () => {
+        empty = false;
+        return HttpResponse.json({ data: post({ id: 55 }) }, { status: 201 });
+      }),
+    );
+    const onFiltersChange = vi.fn();
+    const { user, router } = await renderRouted(<PostsPage filters={{}} onFiltersChange={onFiltersChange} />, {
+      path: "/posts",
+    });
+    const newBtns = await screen.findAllByRole("button", { name: "New post" });
+    await user.click(newBtns.at(-1) as HTMLElement);
+    const dlg = await screen.findByRole("dialog", { name: "New post" });
+    await user.type(within(dlg).getByLabelText("Title"), "From dialog");
+    await user.click(within(dlg).getByRole("button", { name: "Create" }));
+    await waitFor(() => expect(router.state.location.pathname).toBe("/posts/55"));
+  });
 });

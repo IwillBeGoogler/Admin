@@ -134,4 +134,46 @@ describe("DiagramProjectPage", () => {
     await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Revoke" }));
     await waitFor(() => expect(screen.getByRole("alertdialog")).toBeInTheDocument());
   });
+
+  it("opens preview dialog: error with retry, empty pages, multi-page SVGs, and close", async () => {
+    signIn(["diagrams.read"]);
+    let mode: "err" | "empty" | "multi" = "err";
+    server.use(
+      http.get(api("/admin/diagrams/projects/p1"), () => HttpResponse.json(detail([]))),
+      http.get(api("/admin/diagrams/files/f1/preview"), () => {
+        if (mode === "err") return problem(500, "render failed");
+        if (mode === "empty")
+          return HttpResponse.json({ data: { id: "f1", name: "Checkout", kind: "sdd", version: 4, pages: null } });
+        return HttpResponse.json({
+          data: {
+            id: "f1",
+            name: "Checkout",
+            kind: "sdd",
+            version: 4,
+            pages: [
+              { name: "Overview", svg: "<svg><rect/></svg>" },
+              { name: "Detail", svg: "<svg><circle/></svg>" },
+            ],
+          },
+        });
+      }),
+    );
+    const { user } = await renderRouted(<DiagramProjectPage id="p1" />);
+    await user.click(await screen.findByRole("button", { name: /View/i }));
+    const dlg = await screen.findByRole("dialog");
+    expect(await within(dlg).findByText(/render failed/)).toBeInTheDocument();
+
+    mode = "empty";
+    await user.click(within(dlg).getByRole("button", { name: "Retry" }));
+    expect(await within(dlg).findByText(/No pages|empty/i)).toBeInTheDocument();
+
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+
+    mode = "multi";
+    await user.click(screen.getByRole("button", { name: /View/i }));
+    const dlg2 = await screen.findByRole("dialog");
+    expect(await within(dlg2).findByAltText("Overview")).toBeInTheDocument();
+    expect(within(dlg2).getByAltText("Detail")).toBeInTheDocument();
+  });
 });

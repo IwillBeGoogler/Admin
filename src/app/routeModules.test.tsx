@@ -59,6 +59,7 @@ const ids: [string, string][] = [
   ["/diagrams/p1", "/_authed/diagrams/$projectId"],
   ["/posts", "/_authed/posts/"],
   ["/posts/new", "/_authed/posts/new"],
+  ["/glossary", "/_authed/glossary"],
   ["/roles/editor", "/_authed/roles/$name"],
   ["/sessions/abc", "/_authed/sessions/$id"],
   ["/sessions/abc?user=5", "/_authed/sessions/$id"],
@@ -131,5 +132,30 @@ describe("route modules", () => {
     await userEvent.type(title, "!");
     await userEvent.click(screen.getByRole("button", { name: /Save/ }));
     await waitFor(() => expect(router.state.location.pathname).toBe("/posts/4"));
+  });
+
+  it("redirects / to the first allowed route when user lacks stats.read", async () => {
+    localStorage.setItem("admin.locale", "en");
+    signIn(["post.update"]);
+    server.use(
+      http.get(api("/*"), ({ request }) => {
+        const p = new URL(request.url).pathname;
+        if (p.endsWith("/me") || p.endsWith("/guard/auth/me")) return undefined;
+        return HttpResponse.json(empty);
+      }),
+    );
+    const queryClient = createQueryClient();
+    queryClient.setDefaultOptions({ queries: { retry: false } });
+    const router = createRouter({
+      routeTree,
+      context: { queryClient },
+      history: createMemoryHistory({ initialEntries: ["/"] }),
+    });
+    render(
+      <Providers queryClient={queryClient}>
+        <RouterProvider router={router} />
+      </Providers>,
+    );
+    await waitFor(() => expect(router.state.location.pathname).toBe("/posts"));
   });
 });

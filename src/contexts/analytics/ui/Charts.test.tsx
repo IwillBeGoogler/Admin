@@ -11,7 +11,7 @@ vi.mock("recharts", async (importOriginal) => {
   };
 });
 
-import { CategoryChart, DailyChart, TotalsChart } from "./Charts";
+import { CategoryChart, DailyChart, TotalsChart, ViewsChart } from "./Charts";
 
 describe("charts", () => {
   it("render with a fixed size and format day ticks as MM-DD", () => {
@@ -30,5 +30,19 @@ describe("charts", () => {
     expect(a.container.querySelector(".recharts-bar")).not.toBeNull();
     const b = render(<CategoryChart data={data} />);
     expect(b.container.querySelector(".recharts-wrapper")).not.toBeNull();
+  });
+
+  it("views chart renders posts, diagrams and pages series", () => {
+    const days = Array.from({ length: 4 }, (_, i) => ({
+      day: `2026-10-0${i + 1}`,
+      posts: i + 1,
+      diagrams: i,
+      pages: i * 2,
+    }));
+    const { container } = render(
+      <ViewsChart data={days} labels={{ posts: "Posts", diagrams: "Diagrams", pages: "Pages" }} />,
+    );
+    expect(container.querySelector(".recharts-wrapper")).not.toBeNull();
+    expect(container.textContent).toContain("10-01");
   });
 });

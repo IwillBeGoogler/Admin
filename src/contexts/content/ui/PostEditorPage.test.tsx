@@ -391,5 +391,15 @@ describe("PostEditorPage", () => {
       await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
       expect(screen.getByText("No terms for this article yet.")).toBeInTheDocument();
     });
+
+    it("inserts a code group into the body textarea", async () => {
+      signIn();
+      server.use(...taxonomy());
+      const { user } = await renderRouted(<PostEditorPage onSaved={() => {}} />);
+      const body = (await screen.findByLabelText("Body (Markdown)")) as HTMLTextAreaElement;
+      await user.type(body, "Intro");
+      await user.click(screen.getByRole("button", { name: /code.*group|languages/i }));
+      expect(body.value).toContain("group=");
+    });
   });
 });
