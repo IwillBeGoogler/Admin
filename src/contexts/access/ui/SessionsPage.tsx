@@ -14,7 +14,7 @@ import { RelativeTime } from "@/shared/ui/relative-time";
 import { ErrorState, PageHeader } from "@/shared/ui/states";
 import { Table, TBody, TD, TH, THead, TR } from "@/shared/ui/table";
 import { useMySessions, useRevokeMySession, useRevokeUserSessions, useUserSessions } from "../application/hooks";
-import { type DeviceKind, deviceKind, type Session } from "../domain/access";
+import { type DeviceKind, deviceKind, type Session, sessionStats } from "../domain/access";
 
 const deviceIcon: Record<DeviceKind, typeof MonitorIcon> = {
   desktop: MonitorIcon,
@@ -23,6 +23,51 @@ const deviceIcon: Record<DeviceKind, typeof MonitorIcon> = {
   cli: TerminalIcon,
   unknown: CircleHelpIcon,
 };
+
+function SessionStatsBar({ sessions }: { sessions: Session[] }) {
+  const { t } = useI18n();
+  const st = sessionStats(sessions);
+  const tiles: [string, number][] = [
+    [t("sessions.statTotal"), st.total],
+    [t("sessions.statActive"), st.active],
+    [t("sessions.statIps"), st.uniqueIps],
+    [t("sessions.statStarted24h"), st.started24h],
+    [t("sessions.statExpiring"), st.expiringSoon],
+  ];
+  const hours = st.avgAgeMs / 3_600_000;
+  const avgAge = hours >= 48 ? `${(hours / 24).toFixed(1)} d` : `${hours.toFixed(1)} h`;
+  const groups: [string, [string, number][]][] = [
+    [t("sessions.statDevices"), st.byDevice],
+    [t("sessions.statBrowsers"), st.byBrowser],
+    [t("sessions.statOs"), st.byOs],
+  ];
+  return (
+    <div className="grid gap-3 px-6 pb-4 sm:grid-cols-3 lg:grid-cols-4" data-testid="session-stats">
+      {tiles.map(([label, n]) => (
+        <div key={label} className="rounded-md border p-3">
+          <div className="text-xs text-muted-foreground">{label}</div>
+          <div className="text-2xl font-semibold">{n}</div>
+        </div>
+      ))}
+      <div className="rounded-md border p-3">
+        <div className="text-xs text-muted-foreground">{t("sessions.statAvgAge")}</div>
+        <div className="text-2xl font-semibold">{st.total ? avgAge : "—"}</div>
+      </div>
+      {groups.map(([label, rows]) => (
+        <div key={label} className="rounded-md border p-3">
+          <div className="text-xs text-muted-foreground">{label}</div>
+          <div className="flex flex-wrap gap-1 pt-1">
+            {rows.map(([k, n]) => (
+              <Badge key={k} variant="outline" className="capitalize">
+                {k} · {n}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function SessionTable({
   sessions,
@@ -132,7 +177,12 @@ export function SessionsPage() {
           </CardHeader>
           <CardContent className="px-0">
             <ListView bare query={mine} items={mine.data ?? []} empty={{ title: t("sessions.empty") }}>
-              {(rows) => <SessionTable sessions={rows} onRevoke={setRevoking} />}
+              {(rows) => (
+                <>
+                  <SessionStatsBar sessions={rows} />
+                  <SessionTable sessions={rows} onRevoke={setRevoking} />
+                </>
+              )}
             </ListView>
           </CardContent>
         </Card>
@@ -174,7 +224,12 @@ export function SessionsPage() {
               </form>
               {userId === null ? null : (
                 <ListView bare query={theirs} items={theirs.data ?? []} empty={{ title: t("sessions.empty") }}>
-                  {(rows) => <SessionTable sessions={rows} userId={userId} />}
+                  {(rows) => (
+                    <>
+                      <SessionStatsBar sessions={rows} />
+                      <SessionTable sessions={rows} userId={userId} />
+                    </>
+                  )}
                 </ListView>
               )}
             </CardContent>

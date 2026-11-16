@@ -76,6 +76,94 @@ export const deviceKind = (ua: string): DeviceKind => {
   return "unknown";
 };
 
+export interface SessionStats {
+  total: number;
+  /** Seen within the last ACTIVE_WINDOW_MS. */
+  active: number;
+  uniqueIps: number;
+  byDevice: [DeviceKind, number][];
+  /** Started within the last 24 hours. */
+  started24h: number;
+  /** Expiring within the next 24 hours. */
+  expiringSoon: number;
+  /** Mean time since start, ms; 0 with no sessions. */
+  avgAgeMs: number;
+  byBrowser: [string, number][];
+  byOs: [string, number][];
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Browser family from a user agent; "Other" when unknown. */
+export const browserName = (ua: string): string => {
+  if (/Edg(e|A|iOS)?\//.test(ua)) return "Edge";
+  if (/OPR\/|Opera/.test(ua)) return "Opera";
+  if (/Firefox\/|FxiOS/.test(ua)) return "Firefox";
+  if (/Chrome\/|CriOS/.test(ua)) return "Chrome";
+  if (/Safari\//.test(ua)) return "Safari";
+  if (/curl\/|Wget|HTTPie|PostmanRuntime|Go-http-client|python-requests|okhttp/i.test(ua)) return "CLI";
+  return "Other";
+};
+
+/** OS family from a user agent; "Other" when unknown. */
+export const osName = (ua: string): string => {
+  if (/Windows/.test(ua)) return "Windows";
+  if (/iPhone|iPad|iPod/.test(ua)) return "iOS";
+  if (/Android/.test(ua)) return "Android";
+  if (/Macintosh|Mac OS X/.test(ua)) return "macOS";
+  if (/CrOS/.test(ua)) return "ChromeOS";
+  if (/Linux|X11/.test(ua)) return "Linux";
+  return "Other";
+};
+
+const ranked = <K extends string>(m: Map<K, number>): [K, number][] =>
+  [...m].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+
+export const ACTIVE_WINDOW_MS = 15 * 60 * 1000;
+
+/** Totals over a list of sessions; devices sorted by count, then name. */
+export const sessionStats = (sessions: Session[], now: number = Date.now()): SessionStats => {
+  const devices = new Map<DeviceKind, number>();
+  const ips = new Set<string>();
+  const browsers = new Map<string, number>();
+  const systems = new Map<string, number>();
+  let active = 0;
+  let started24h = 0;
+  let expiringSoon = 0;
+  let ageSum = 0;
+  let ageN = 0;
+  for (const s of sessions) {
+    const b = browserName(s.user_agent);
+    browsers.set(b, (browsers.get(b) ?? 0) + 1);
+    const o = osName(s.user_agent);
+    systems.set(o, (systems.get(o) ?? 0) + 1);
+    const born = Date.parse(s.created_at);
+    if (Number.isFinite(born)) {
+      ageSum += Math.max(0, now - born);
+      ageN++;
+      if (now - born <= DAY_MS) started24h++;
+    }
+    const exp = Date.parse(s.expires_at);
+    if (Number.isFinite(exp) && exp >= now && exp - now <= DAY_MS) expiringSoon++;
+    const k = deviceKind(s.user_agent);
+    devices.set(k, (devices.get(k) ?? 0) + 1);
+    if (s.ip) ips.add(s.ip);
+    const seen = Date.parse(s.last_seen_at);
+    if (Number.isFinite(seen) && now - seen <= ACTIVE_WINDOW_MS) active++;
+  }
+  return {
+    total: sessions.length,
+    active,
+    uniqueIps: ips.size,
+    byDevice: ranked(devices),
+    started24h,
+    expiringSoon,
+    avgAgeMs: ageN ? ageSum / ageN : 0,
+    byBrowser: ranked(browsers),
+    byOs: ranked(systems),
+  };
+};
+
 // ABAC policies (Guard): evaluated before role permissions, by priority; deny wins.
 export const policyOperators = ["eq", "ne", "gt", "lt", "gte", "lte", "in", "not_in", "contains"] as const;
 export const conditionSchema = z.object({
