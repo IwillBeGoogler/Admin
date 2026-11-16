@@ -24,6 +24,10 @@ describe("FilterChips", () => {
     await user.click(screen.getByRole("button", { name: "Reset all" }));
     expect(onReset).toHaveBeenCalledOnce();
   });
+  it("has no Reset all without onReset", () => {
+    renderUI(<FilterChips chips={[{ id: "tag", name: "Tag", value: "#go", onRemove: () => {} }]} />);
+    expect(screen.queryByRole("button", { name: "Reset all" })).toBeNull();
+  });
   it("renders nothing without filters", () => {
     const { container } = renderUI(<FilterChips chips={[]} />);
     expect(container.querySelector("ul")).toBeNull();

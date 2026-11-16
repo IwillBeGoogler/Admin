@@ -28,4 +28,15 @@ describe("pageEnvelope", () => {
   it("turns an empty cursor into undefined", () => {
     expect(schema.parse({ data: [], meta: { next_cursor: "" } }).meta.nextCursor).toBeUndefined();
   });
+
+  it("falls back per field when meta is present but empty; null data with meta", () => {
+    expect(schema.parse({ data: [{ id: 1 }], meta: {} }).meta).toEqual({
+      page: 0,
+      limit: 0,
+      total: 0,
+      hasMore: false,
+      nextCursor: undefined,
+    });
+    expect(schema.parse({ data: null, meta: {} }).meta.total).toBe(0);
+  });
 });

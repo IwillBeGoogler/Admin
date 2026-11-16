@@ -63,6 +63,19 @@ describe("postRepository", () => {
     expect((await postRepository.list({ source: "draft" }, {})).items[0]?.status).toBe("draft");
   });
 
+  it("lists unlisted via /admin/posts", async () => {
+    server.use(
+      http.get(api("/admin/posts"), ({ request }) => {
+        expect(new URL(request.url).searchParams.get("status")).toBe("unlisted");
+        return HttpResponse.json({
+          data: [post({ status: "unlisted" })],
+          meta: { page: 1, limit: 20, total: 1, has_more: false },
+        });
+      }),
+    );
+    expect((await postRepository.list({ source: "unlisted" }, {})).items[0]?.status).toBe("unlisted");
+  });
+
   it("creates, updates and deletes", async () => {
     server.use(
       http.post(api("/posts"), async ({ request }) =>
@@ -161,6 +174,17 @@ describe("taxonomy repositories", () => {
     expect((await categoryRepository.list())[0]?.count).toBe(3);
     expect((await categoryRepository.create({ name: "Go", slug: "", parent_id: 0 })).name).toBe("Go");
     await categoryRepository.remove(2);
+  });
+  it("category create sends slug and parent_id only when set", async () => {
+    let body: unknown;
+    server.use(
+      http.post(api("/categories"), async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json({ data: { id: 5, name: "Go", count: 0 } }, { status: 201 });
+      }),
+    );
+    await categoryRepository.create({ name: "Go", slug: "golang", parent_id: 1 });
+    expect(body).toEqual({ name: "Go", slug: "golang", parent_id: 1 });
   });
   it("labels send {name,color}", async () => {
     server.use(

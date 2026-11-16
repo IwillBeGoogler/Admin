@@ -58,6 +58,45 @@ describe("PostsPage", () => {
     expect(screen.getByLabelText("Category")).toBeEnabled();
   });
 
+  it("unlisted source shows chip and unlisted rows", async () => {
+    signIn();
+    server.use(
+      ...taxonomy(),
+      http.get(api("/admin/posts"), () => page([post({ status: "unlisted", title: "Hidden" })])),
+    );
+    const change = vi.fn();
+    const { user } = await renderRouted(<PostsPage filters={{ source: "unlisted" }} onFiltersChange={change} />);
+    expect(await screen.findByText("Hidden")).toBeInTheDocument();
+    expect(screen.getAllByText("Unlisted").length).toBeGreaterThan(0);
+    await user.selectOptions(screen.getByLabelText("Show"), "scheduled");
+    expect(change).toHaveBeenLastCalledWith(expect.objectContaining({ source: "scheduled" }));
+  });
+
+  it("clear filters keeps the sort param; published column sorts", async () => {
+    signIn();
+    server.use(
+      ...taxonomy(),
+      http.get(api("/posts"), () => page([])),
+    );
+    const change = vi.fn();
+    const { user } = await renderRouted(<PostsPage filters={{ q: "zzz", sort: "views" }} onFiltersChange={change} />);
+    await user.click(await screen.findByRole("button", { name: "Clear filters" }));
+    expect(change).toHaveBeenLastCalledWith({ sort: "views" });
+  });
+
+  it("published column header sorts", async () => {
+    signIn();
+    server.use(
+      ...taxonomy(),
+      http.get(api("/posts"), () => page([post({ published_at: null, publish_at: "2030-01-01T00:00:00Z" })])),
+    );
+    const change = vi.fn();
+    const { user } = await renderRouted(<PostsPage filters={{}} onFiltersChange={change} />);
+    const head = await screen.findByRole("columnheader", { name: /Published/ });
+    await user.click(within(head).getByRole("button"));
+    expect(change).toHaveBeenCalled();
+  });
+
   it("shows error with retry", async () => {
     signIn();
     let n = 0;

@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { en } from "./en";
-import { isLocale, translate } from "./i18n";
+import { detectLocale, isLocale, translate } from "./i18n";
 import { ru } from "./ru";
 import { uz } from "./uz";
 
@@ -21,5 +21,33 @@ describe("i18n", () => {
   it("validates locales", () => {
     expect(isLocale("uz")).toBe(true);
     expect(isLocale("de")).toBe(false);
+  });
+  it("falls back to the key for an unknown key and keeps unmatched vars", () => {
+    expect(translate("en", "no.such.key" as never)).toBe("no.such.key");
+    expect(translate("en", "users.banTitle", {})).toBe("Sanction @{name}");
+  });
+});
+
+describe("detectLocale", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    localStorage.clear();
+  });
+  it("prefers the stored locale", () => {
+    localStorage.setItem("admin.locale", "ru");
+    expect(detectLocale()).toBe("ru");
+  });
+  it("uses the browser language, then uz", () => {
+    vi.spyOn(navigator, "language", "get").mockReturnValue("en-US");
+    expect(detectLocale()).toBe("en");
+    vi.spyOn(navigator, "language", "get").mockReturnValue("de-DE");
+    expect(detectLocale()).toBe("uz");
+  });
+  it("survives unreadable storage", () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new Error("blocked");
+    });
+    vi.spyOn(navigator, "language", "get").mockReturnValue("ru-RU");
+    expect(detectLocale()).toBe("ru");
   });
 });

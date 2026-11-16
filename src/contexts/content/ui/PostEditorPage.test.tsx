@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { post, problem, signIn } from "@/test/fixtures";
 import { renderRouted } from "@/test/render";
 import { api, server } from "@/test/server";
-import { PostEditorPage } from "./PostEditorPage";
+import { NewPostDialog, PostEditorPage } from "./PostEditorPage";
 
 const taxonomy = () => [
   http.get(api("/categories"), () => HttpResponse.json({ data: [{ id: 1, name: "Docker", count: 3 }] })),
@@ -142,6 +142,26 @@ describe("PostEditorPage", () => {
     void router.navigate({ to: "/away" as "/" });
     await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Discard changes" }));
     await waitFor(() => expect(router.state.location.pathname).toBe("/away"));
+  });
+
+  it("NewPostDialog: clean close is immediate; dirty close asks, keep editing stays, discard closes", async () => {
+    signIn();
+    server.use(...taxonomy());
+    const onOpenChange = vi.fn();
+    const { user } = await renderRouted(<NewPostDialog open onOpenChange={onOpenChange} onSaved={() => {}} />);
+    await screen.findByLabelText("Title");
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
+    onOpenChange.mockClear();
+    await user.type(screen.getByLabelText("Title"), "wip");
+    await user.keyboard("{Escape}");
+    const dialog = await screen.findByRole("alertdialog", { name: "Discard changes?" });
+    expect(onOpenChange).not.toHaveBeenCalled();
+    await user.click(within(dialog).getByRole("button", { name: "Keep editing" }));
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+    await user.keyboard("{Escape}");
+    await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Discard changes" }));
+    await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
   });
 
   it("Mod+S saves from inside a field", async () => {

@@ -32,6 +32,25 @@ describe("CategoriesPage", () => {
     await waitFor(() => expect(screen.queryByRole("link", { name: "Docker" })).toBeNull());
     expect(await screen.findByText("Category “Docker” deleted")).toBeInTheDocument();
   });
+  it("rejects a malformed slug", async () => {
+    signIn();
+    server.use(http.get(api("/categories"), () => HttpResponse.json({ data: [] })));
+    const { user } = await renderRouted(<CategoriesPage />);
+    await user.click(await screen.findByRole("button", { name: "New category" }));
+    await user.type(await screen.findByLabelText("Name"), "Go");
+    await user.type(screen.getByPlaceholderText("system-design"), "Bad Slug!");
+    await user.click(screen.getByRole("button", { name: "Create" }));
+    expect(await screen.findByText("Lowercase letters, digits and dashes")).toBeInTheDocument();
+  });
+  it("Escape closes the create dialog", async () => {
+    signIn();
+    server.use(http.get(api("/categories"), () => HttpResponse.json({ data: [] })));
+    const { user } = await renderRouted(<CategoriesPage />);
+    await user.click(await screen.findByRole("button", { name: "New category" }));
+    await screen.findByLabelText("Name");
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByLabelText("Name")).toBeNull());
+  });
   it("shows a duplicate-name error from the server", async () => {
     signIn();
     server.use(
