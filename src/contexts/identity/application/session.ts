@@ -19,7 +19,7 @@ export const currentAdminQuery = () =>
 export const useAuthToken = () => useSyncExternalStore(tokens.subscribe, tokens.get, tokens.get);
 export const isSignedIn = () => tokens.get() !== null;
 
-const storeSession = (s: Session) => tokens.set(storedFrom(s));
+const storeSession = (s: Session) => tokens.set({ ...storedFrom(s), startedAt: Date.now() });
 
 export function useLogin() {
   const qc = useQueryClient();

@@ -1,5 +1,6 @@
 /**
- * Holds the access token (3 hours) and the refresh token (30 days). Memory is
+ * Holds the access token (1 hour) and the refresh token; the admin session
+ * ends ADMIN_SESSION_MS (12 hours) after sign-in, whatever the server allows. Memory is
  * the source of truth; localStorage mirrors it so the admin stays signed in
  * across reloads, tabs and browser restarts. Other tabs' writes arrive as
  * `storage` events: a pair another tab rotated (or a sign-out there) replaces
@@ -12,7 +13,15 @@ export interface StoredToken {
   /** Refresh token for POST /auth/refresh (absent for sessions from before access tokens). */
   refreshToken?: string;
   refreshExpiresAt?: string;
+  /** Sign-in time (ms epoch); kept across refreshes, caps the session at ADMIN_SESSION_MS. */
+  startedAt?: number;
 }
+
+/** Longest an admin session lasts from sign-in. */
+export const ADMIN_SESSION_MS = 12 * 60 * 60_000;
+
+/** When the admin session ends (ms epoch); NaN without a sign-in time. */
+export const sessionEndsAt = (t: StoredToken | null) => (t?.startedAt ? t.startedAt + ADMIN_SESSION_MS : Number.NaN);
 
 /** The stored form of a login/refresh response. */
 export const storedFrom = (s: {
@@ -86,14 +95,16 @@ function read(storage: Pick<Storage, "getItem"> | null): StoredToken | null {
     if (!raw) return null;
     const v = JSON.parse(raw) as Partial<StoredToken>;
     if (typeof v.token !== "string" || typeof v.expiresAt !== "string") return null;
+    const started = typeof v.startedAt === "number" ? { startedAt: v.startedAt } : {};
     return typeof v.refreshToken === "string"
       ? {
+          ...started,
           token: v.token,
           expiresAt: v.expiresAt,
           refreshToken: v.refreshToken,
           refreshExpiresAt: v.refreshExpiresAt ?? "",
         }
-      : { token: v.token, expiresAt: v.expiresAt };
+      : { ...started, token: v.token, expiresAt: v.expiresAt };
   } catch {
     return null;
   }

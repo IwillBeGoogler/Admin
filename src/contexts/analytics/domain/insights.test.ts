@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { activityFromAudit, insightsSchema, insightsSearchSchema, mergeDays } from "./insights";
+import {
+  activityFromAudit,
+  calendarHeat,
+  cumulative,
+  insightsSchema,
+  insightsSearchSchema,
+  mergeDays,
+  pareto,
+  share,
+  weekOverWeek,
+} from "./insights";
 
 describe("insights", () => {
   it("defaults missing sections and null lists", () => {
@@ -46,5 +56,58 @@ describe("insights", () => {
     expect(a.perDay).toHaveLength(3);
     expect(a.perDay.at(-1)).toEqual({ day: "2026-11-10", ok: 1, failed: 1 });
     expect(a.actions).toEqual([{ key: "auth.login", count: 2 }]);
+  });
+});
+
+describe("chart helpers", () => {
+  const d = (n: number, c = 1) =>
+    Array.from({ length: n }, (_, i) => ({ day: `2026-10-${String(i + 1).padStart(2, "0")}`, count: c }));
+
+  it("cumulative ends at the given total", () => {
+    expect(cumulative(d(3), 10).map((x) => x.count)).toEqual([8, 9, 10]);
+  });
+
+  it("weekOverWeek compares the last 7 days to the 7 before", () => {
+    const days = [...d(7, 2), ...d(7, 3)].map((x, i) => ({ ...x, day: `2026-10-${String(i + 1).padStart(2, "0")}` }));
+    expect(weekOverWeek(days)).toBe(50);
+    expect(weekOverWeek(d(5))).toBeNull();
+    expect(weekOverWeek([...d(7, 0), ...d(7, 4)])).toBeNull();
+  });
+
+  it("pareto sorts and accumulates", () => {
+    const r = pareto([
+      { key: "b", count: 1 },
+      { key: "a", count: 3 },
+      { key: "z", count: 0 },
+    ]);
+    expect(r).toEqual([
+      { name: "a", count: 3, cum: 75 },
+      { name: "b", count: 1, cum: 100 },
+    ]);
+  });
+
+  it("pareto breaks ties by name", () => {
+    expect(
+      pareto([
+        { key: "b", count: 2 },
+        { key: "a", count: 2 },
+      ]).map((r) => r.name),
+    ).toEqual(["a", "b"]);
+  });
+
+  it("calendarHeat groups days into Monday-first weeks", () => {
+    const w = calendarHeat([
+      { day: "2026-10-05", count: 2 },
+      { day: "2026-10-11", count: 4 },
+      { day: "2026-10-12", count: 1 },
+    ]);
+    expect(w).toHaveLength(2);
+    expect(w[0]?.values).toEqual([2, 0, 0, 0, 0, 0, 4]);
+    expect(w[1]?.values[0]).toBe(1);
+  });
+
+  it("share handles an empty whole", () => {
+    expect(share(1, 4)).toBe(25);
+    expect(share(1, 0)).toBe(0);
   });
 });

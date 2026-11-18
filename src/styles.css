@@ -196,3 +196,29 @@ table[data-density="compact"] > thead > tr > th {
 table[data-density="compact"] > tbody > tr > td :is(button, a[class*="inline-flex"]) {
   height: 1.75rem;
 }
+
+/* Entrance motion for charts and tiles; off for reduced-motion viewers. */
+@keyframes viz-pop {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+}
+@keyframes viz-rise {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+}
+.viz-pop {
+  animation: viz-pop 420ms ease-out backwards;
+}
+.viz-rise {
+  animation: viz-rise 420ms ease-out backwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .viz-pop,
+  .viz-rise {
+    animation: none;
+  }
+}

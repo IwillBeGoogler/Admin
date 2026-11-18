@@ -97,3 +97,21 @@ describe("createTokenStore", () => {
     expect(createTokenStore().get()).toBeNull();
   });
 });
+
+describe("admin session cap", () => {
+  it("ends 12 hours after sign-in and survives a reload", async () => {
+    const { ADMIN_SESSION_MS, createTokenStore: create, sessionEndsAt } = await import("./tokenStore");
+    expect(sessionEndsAt(null)).toBeNaN();
+    expect(sessionEndsAt({ token: "a", expiresAt: "x", startedAt: 1000 })).toBe(1000 + ADMIN_SESSION_MS);
+    const m = new Map<string, string>();
+    const storage = {
+      getItem: (k: string) => m.get(k) ?? null,
+      setItem: (k: string, v: string) => void m.set(k, v),
+      removeItem: (k: string) => void m.delete(k),
+    };
+    create(storage, null).set({ token: "a", expiresAt: "x", refreshToken: "r", refreshExpiresAt: "y", startedAt: 5 });
+    expect(create(storage, null).get()?.startedAt).toBe(5);
+    create(storage, null).set({ token: "a", expiresAt: "x", startedAt: 6 });
+    expect(create(storage, null).get()?.startedAt).toBe(6);
+  });
+});

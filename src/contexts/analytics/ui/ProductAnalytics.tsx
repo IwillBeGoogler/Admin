@@ -5,9 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/sha
 import { Skeleton } from "@/shared/ui/skeleton";
 import { EmptyState, ErrorState } from "@/shared/ui/states";
 import { useProductReport } from "../application/queries";
-import { funnelRates, pct, readTime, stickiness } from "../domain/product";
+import { WEEKDAY_KEYS } from "../domain/insights";
+import { funnelRates, heatRow, pct, readTime, stickiness } from "../domain/product";
 
 const DailyChart = lazy(() => import("./Charts").then((m) => ({ default: m.DailyChart })));
+const HeatGrid = lazy(() => import("./Charts").then((m) => ({ default: m.HeatGrid })));
+const DonutChart = lazy(() => import("./Charts").then((m) => ({ default: m.DonutChart })));
 const PERIODS = [7, 30, 90] as const;
 
 function Metric({ label, value, hint }: { label: string; value: string | undefined; hint?: string }) {
@@ -189,6 +192,77 @@ export function ProductAnalytics() {
               </CardContent>
             </Card>
           </div>
+
+          <div className="grid gap-6 lg:grid-cols-3">
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>{t("product.traffic")}</CardTitle>
+                <CardDescription>{t("product.trafficNote")}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {r ? (
+                  r.heatmap.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">{t("product.noData")}</p>
+                  ) : (
+                    <Suspense fallback={<Skeleton className="h-40 w-full" />}>
+                      <HeatGrid
+                        rows={WEEKDAY_KEYS.map((k, i) => ({ label: t(k), values: heatRow(r.heatmap, i) }))}
+                        cols={Array.from({ length: 24 }, (_, h) => (h % 3 === 0 ? String(h) : ""))}
+                      />
+                    </Suspense>
+                  )
+                ) : (
+                  <Skeleton className="h-40 w-full" />
+                )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>{t("product.referrers")}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {r && r.referrers.length > 0 ? (
+                  <div className="h-56">
+                    <Suspense fallback={<Skeleton className="h-full w-full" />}>
+                      <DonutChart data={r.referrers.map((x) => ({ name: x.key, count: x.count }))} />
+                    </Suspense>
+                  </div>
+                ) : r ? (
+                  <p className="text-sm text-muted-foreground">{t("product.noData")}</p>
+                ) : (
+                  <Skeleton className="h-40 w-full" />
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("product.cohorts")}</CardTitle>
+              <CardDescription>{t("product.cohortsNote")}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {r ? (
+                r.cohorts.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">{t("product.noData")}</p>
+                ) : (
+                  <Suspense fallback={<Skeleton className="h-40 w-full" />}>
+                    <HeatGrid
+                      rows={r.cohorts.map((c) => ({
+                        label: `${c.week.slice(5)} (${c.size})`,
+                        values: c.retained.map((v) => Math.round(v * 100)),
+                      }))}
+                      cols={Array.from({ length: Math.max(...r.cohorts.map((c) => c.retained.length)) }, (_, i) =>
+                        t("product.weekN", { n: i }),
+                      )}
+                    />
+                  </Suspense>
+                )
+              ) : (
+                <Skeleton className="h-40 w-full" />
+              )}
+            </CardContent>
+          </Card>
         </>
       )}
     </section>

@@ -19,6 +19,9 @@ export const productReportSchema = z.object({
     .default({ cohort: 0, d1: 0, d7: 0, d30: 0 }),
   top_paths: list(keyCount),
   languages: list(keyCount),
+  referrers: list(keyCount),
+  heatmap: list(z.object({ dow: z.number(), hour: z.number(), count: z.number() })),
+  cohorts: list(z.object({ week: z.string(), size: z.number(), retained: list(z.number()) })),
 });
 export type ProductReport = z.infer<typeof productReportSchema>;
 
@@ -47,3 +50,10 @@ export const readTime = (seconds: number) => {
   const m = Math.floor(s / 60);
   return m ? `${m}m ${String(s % 60).padStart(2, "0")}s` : `${s}s`;
 };
+
+/** Page views for one weekday (0 = Monday) as 24 hourly counts, from the backend's Sunday-first cells. */
+export const heatRow = (cells: ProductReport["heatmap"], weekday: number) =>
+  Array.from(
+    { length: 24 },
+    (_, hour) => cells.find((c) => (c.dow + 6) % 7 === weekday && c.hour === hour)?.count ?? 0,
+  );

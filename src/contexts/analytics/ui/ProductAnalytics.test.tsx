@@ -31,16 +31,34 @@ describe("ProductAnalytics", () => {
             retention: { cohort: 5, d1: 0.4, d7: 0.2, d30: 0 },
             top_paths: [{ key: "/", count: 80 }],
             languages: [{ key: "uz", count: 60 }],
+            referrers: [{ key: "news.example.com", count: 7 }],
+            heatmap: [{ dow: 1, hour: 9, count: 4 }],
+            cohorts: [{ week: "2026-10-05", size: 5, retained: [1, 0.4] }],
           },
         });
       }),
     );
     renderUI(<ProductAnalytics />);
     expect(await screen.findByText("1m 35s")).toBeInTheDocument();
+    expect(await screen.findByText("Traffic by weekday and hour")).toBeInTheDocument();
+    expect(screen.getByText("Weekly retention cohorts")).toBeInTheDocument();
+    expect(await screen.findByText("10-05 (5)")).toBeInTheDocument();
     expect(screen.getByText("DAU/MAU 25%")).toBeInTheDocument();
     expect(screen.getByText("25% of previous step")).toBeInTheDocument();
     expect(screen.getByText("40%")).toBeInTheDocument();
     expect(screen.getByText("5 new users in period")).toBeInTheDocument();
+  });
+
+  it("says so when traffic, referrers and cohorts are empty", async () => {
+    signIn();
+    localStorage.setItem("admin.locale", "en");
+    server.use(
+      http.get(api("/admin/analytics"), () =>
+        HttpResponse.json({ data: { days: 30, mau: 5, dau: [{ day: "2026-10-06", count: 1 }], funnel: [] } }),
+      ),
+    );
+    renderUI(<ProductAnalytics />);
+    expect(await screen.findAllByText("No data for this period.")).toHaveLength(3);
   });
 
   it("explains an empty report", async () => {

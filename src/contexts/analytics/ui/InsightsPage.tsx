@@ -13,6 +13,9 @@ import { EmptyState, ErrorState, PageHeader } from "@/shared/ui/states";
 import { useInsights } from "../application/queries";
 import {
   activityFromAudit,
+  calendarHeat,
+  cumulative,
+  engagementPoints,
   INSIGHT_DAYS,
   INSIGHT_TABS,
   type InsightNamed,
@@ -20,24 +23,69 @@ import {
   type InsightsSearch,
   type InsightTab,
   mergeDays,
+  pareto,
   type SeriesRow,
+  share,
+  WEEKDAY_KEYS,
+  weekOverWeek,
 } from "../domain/insights";
 
 const SeriesChart = lazy(() => import("./Charts").then((m) => ({ default: m.SeriesChart })));
 const CategoryChart = lazy(() => import("./Charts").then((m) => ({ default: m.CategoryChart })));
+const DonutChart = lazy(() => import("./Charts").then((m) => ({ default: m.DonutChart })));
+const LinesChart = lazy(() => import("./Charts").then((m) => ({ default: m.LinesChart })));
+const StackedBarsChart = lazy(() => import("./Charts").then((m) => ({ default: m.StackedBarsChart })));
+const ParetoChart = lazy(() => import("./Charts").then((m) => ({ default: m.ParetoChart })));
+const ScatterPlot = lazy(() => import("./Charts").then((m) => ({ default: m.ScatterPlot })));
+const TreemapChart = lazy(() => import("./Charts").then((m) => ({ default: m.TreemapChart })));
+const Sparkline = lazy(() => import("./Charts").then((m) => ({ default: m.Sparkline })));
+const HeatGrid = lazy(() => import("./Charts").then((m) => ({ default: m.HeatGrid })));
+const RadarShape = lazy(() => import("./Charts").then((m) => ({ default: m.RadarShape })));
+const Gauge = lazy(() => import("./Charts").then((m) => ({ default: m.Gauge })));
 
 type Fmt = (n: number) => string;
 
-function Kpi({ label, value }: { label: string; value: string | undefined }) {
+/** Week-over-week change: green up, red down; nothing when there is no earlier week. */
+function Delta({ pct }: { pct: number | null }) {
+  const { t } = useI18n();
+  if (pct === null) return null;
+  const tone = pct > 0 ? "text-[var(--chart-1)]" : pct < 0 ? "text-destructive" : "text-muted-foreground";
   return (
-    <Card>
+    <span className={cn("text-xs font-medium tabular-nums", tone)} title={t("insights.wow")}>
+      {pct > 0 ? "▲" : pct < 0 ? "▼" : "–"} {Math.abs(pct)}%
+    </span>
+  );
+}
+
+function Kpi({
+  label,
+  value,
+  trend,
+}: {
+  label: string;
+  value: string | undefined;
+  /** Daily series behind the number: draws a sparkline and a week-over-week change. */
+  trend?: { day: string; count: number }[];
+}) {
+  return (
+    <Card className="viz-rise">
       <CardContent className="grid gap-1 pt-5">
         <p className="text-sm text-muted-foreground">{label}</p>
         {value === undefined ? (
           <Skeleton className="h-8 w-16" />
         ) : (
-          <p className="text-2xl font-semibold tabular-nums">{value}</p>
+          <div className="flex items-baseline gap-2">
+            <p className="text-2xl font-semibold tabular-nums">{value}</p>
+            {trend ? <Delta pct={weekOverWeek(trend)} /> : null}
+          </div>
         )}
+        {trend && trend.length > 1 ? (
+          <div className="h-8" aria-hidden>
+            <Suspense fallback={null}>
+              <Sparkline values={trend.slice(-14).map((x) => x.count)} />
+            </Suspense>
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );
@@ -45,7 +93,7 @@ function Kpi({ label, value }: { label: string; value: string | undefined }) {
 
 function Panel({ title, children, className }: { title: string; children: ReactNode; className?: string }) {
   return (
-    <Card className={className}>
+    <Card className={cn("viz-rise", className)}>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
       </CardHeader>
@@ -54,13 +102,24 @@ function Panel({ title, children, className }: { title: string; children: ReactN
   );
 }
 
-function Series({ title, rows, series }: { title: string; rows: SeriesRow[]; series: Record<string, string> }) {
+function Series({
+  title,
+  rows,
+  series,
+  kind = "area",
+}: {
+  title: string;
+  rows: SeriesRow[];
+  series: Record<string, string>;
+  kind?: "area" | "lines" | "stacked";
+}) {
   const { t } = useI18n();
+  const Chart = kind === "lines" ? LinesChart : kind === "stacked" ? StackedBarsChart : SeriesChart;
   return (
     <Panel title={title}>
       <div className="h-64">
         <Suspense fallback={<Skeleton className="h-full w-full" />}>
-          <SeriesChart data={rows} series={series} />
+          <Chart data={rows} series={series} />
         </Suspense>
       </div>
       <table className="sr-only">
@@ -125,6 +184,79 @@ function Breakdown({ title, rows, label }: { title: string; rows: InsightNamed[]
   );
 }
 
+/** A chart with a fixed-height box, an empty state and a screen-reader table of `rows`. */
+function Plot({
+  title,
+  rows,
+  height = 256,
+  children,
+}: {
+  title: string;
+  rows: { name: string; count: number }[];
+  height?: number;
+  children: ReactNode;
+}) {
+  const { t } = useI18n();
+  const empty = rows.every((r) => r.count === 0);
+  return (
+    <Panel title={title}>
+      <div style={{ height }}>
+        {empty ? (
+          <EmptyState title={t("insights.empty")} />
+        ) : (
+          <Suspense fallback={<Skeleton className="h-full w-full" />}>{children}</Suspense>
+        )}
+      </div>
+      <table className="sr-only">
+        <caption>{title}</caption>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.name}>
+              <th scope="row">{r.name}</th>
+              <td>{r.count}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </Panel>
+  );
+}
+
+function Heat({ title, days }: { title: string; days: { day: string; count: number }[] }) {
+  const { t } = useI18n();
+  const weeks = calendarHeat(days);
+  return (
+    <Panel title={title}>
+      {weeks.every((w) => w.values.every((v) => v === 0)) ? (
+        <p className="text-sm text-muted-foreground">{t("insights.empty")}</p>
+      ) : (
+        <Suspense fallback={<Skeleton className="h-40 w-full" />}>
+          <HeatGrid
+            rows={weeks.map((w) => ({ label: w.label, values: w.values }))}
+            cols={WEEKDAY_KEYS.map((k) => t(k))}
+          />
+        </Suspense>
+      )}
+    </Panel>
+  );
+}
+
+/** Activity by weekday (Monday first) as a radar. */
+function WeekdayRadar({ title, days }: { title: string; days: { day: string; count: number }[] }) {
+  const { t } = useI18n();
+  const rows = WEEKDAY_KEYS.map((key, i) => ({
+    name: t(key),
+    count: days
+      .filter((d) => (new Date(`${d.day}T00:00:00Z`).getUTCDay() + 6) % 7 === i)
+      .reduce((n, d) => n + d.count, 0),
+  }));
+  return (
+    <Plot title={title} rows={rows}>
+      <RadarShape data={rows} label={title} />
+    </Plot>
+  );
+}
+
 function TopList({ title, rows, n }: { title: string; rows: { key: string; hint?: string; value: number }[]; n: Fmt }) {
   const { t } = useI18n();
   return (
@@ -147,6 +279,9 @@ function TopList({ title, rows, n }: { title: string; rows: { key: string; hint?
   );
 }
 
+/** Target time to resolve a report, hours. */
+const SLA_HOURS = 24;
+
 const grid4 = "grid gap-4 sm:grid-cols-2 lg:grid-cols-4";
 const grid2 = "grid gap-6 lg:grid-cols-2";
 
@@ -161,8 +296,8 @@ function PostsTab({ d, n }: { d: Insights; n: Fmt }) {
   return (
     <>
       <div className={grid4}>
-        <Kpi label={t("insights.posts.total")} value={n(p.total)} />
-        <Kpi label={t("insights.posts.published")} value={n(p.published)} />
+        <Kpi label={t("insights.posts.total")} value={n(p.total)} trend={p.created} />
+        <Kpi label={t("insights.posts.published")} value={n(p.published)} trend={p.published_per_day} />
         <Kpi label={t("insights.posts.drafts")} value={n(p.drafts)} />
         <Kpi label={t("insights.posts.likes")} value={n(p.likes)} />
       </div>
@@ -176,6 +311,53 @@ function PostsTab({ d, n }: { d: Insights; n: Fmt }) {
         }}
       />
       <div className={grid2}>
+        <Plot
+          title={t("insights.posts.status")}
+          rows={[
+            { name: t("insights.posts.publishedLabel"), count: p.published },
+            { name: t("insights.posts.drafts"), count: p.drafts },
+          ]}
+        >
+          <DonutChart
+            data={[
+              { name: t("insights.posts.publishedLabel"), count: p.published },
+              { name: t("insights.posts.drafts"), count: p.drafts },
+            ]}
+          />
+        </Plot>
+        <Series
+          title={t("insights.posts.createdVsPublished")}
+          rows={mergeDays({ created: p.created, published: p.published_per_day })}
+          series={{ created: t("insights.posts.created"), published: t("insights.posts.publishedLabel") }}
+          kind="stacked"
+        />
+        <Plot
+          title={t("insights.posts.pareto")}
+          rows={pareto(p.by_category).map((r) => ({ name: r.name, count: r.count }))}
+        >
+          <ParetoChart
+            data={pareto(p.by_category).slice(0, 8)}
+            labels={{ count: t("insights.posts.count"), cum: t("insights.posts.cumulative") }}
+          />
+        </Plot>
+        <Plot title={t("insights.posts.treemap")} rows={p.by_category.map((r) => ({ name: r.key, count: r.count }))}>
+          <TreemapChart
+            data={p.by_category
+              .filter((r) => r.count > 0)
+              .map((r) => ({ name: r.key || t("insights.none"), count: r.count }))}
+          />
+        </Plot>
+        <Plot
+          title={t("insights.posts.engagement")}
+          rows={engagementPoints(p).map((x) => ({ name: x.title, count: x.likes + x.comments }))}
+        >
+          <ScatterPlot
+            data={engagementPoints(p)}
+            labels={{ x: t("insights.posts.likesLabel"), y: t("insights.posts.commentsLabel") }}
+          />
+        </Plot>
+        <Heat title={t("insights.posts.commentsHeat")} days={p.comments_per_day} />
+        <WeekdayRadar title={t("insights.posts.weekdayRadar")} days={p.published_per_day} />
         <Breakdown title={t("insights.posts.byCategory")} rows={p.by_category} />
         <TopList title={t("insights.posts.topLiked")} rows={p.top_liked.map((x) => post(x, x.likes))} n={n} />
         <TopList
@@ -194,7 +376,7 @@ function UsersTab({ d, n }: { d: Insights; n: Fmt }) {
   return (
     <>
       <div className={grid4}>
-        <Kpi label={t("insights.users.total")} value={n(u.total)} />
+        <Kpi label={t("insights.users.total")} value={n(u.total)} trend={u.signups} />
         <Kpi label={t("insights.users.new")} value={n(u.new)} />
         <Kpi label={t("insights.users.verified")} value={n(u.verified)} />
         <Kpi label={t("insights.users.sanctioned")} value={n(u.sanctioned)} />
@@ -204,11 +386,48 @@ function UsersTab({ d, n }: { d: Insights; n: Fmt }) {
         rows={mergeDays({ signups: u.signups })}
         series={{ signups: t("insights.users.signupsLabel") }}
       />
-      <TopList
-        title={t("insights.users.topAuthors")}
-        rows={u.top_authors.map((a) => ({ key: `@${a.key}`, value: a.count }))}
-        n={n}
-      />
+      <div className={grid2}>
+        <Series
+          title={t("insights.users.growth")}
+          rows={mergeDays({ total: cumulative(u.signups, u.total) })}
+          series={{ total: t("insights.users.total") }}
+        />
+        <Heat title={t("insights.users.signupsHeat")} days={u.signups} />
+        <WeekdayRadar title={t("insights.users.weekdayRadar")} days={u.signups} />
+        <Plot
+          title={t("insights.users.verification", { p: share(u.verified, u.total) })}
+          rows={[
+            { name: t("insights.users.verified"), count: u.verified },
+            { name: t("insights.users.unverified"), count: Math.max(u.total - u.verified, 0) },
+          ]}
+        >
+          <DonutChart
+            data={[
+              { name: t("insights.users.verified"), count: u.verified },
+              { name: t("insights.users.unverified"), count: Math.max(u.total - u.verified, 0) },
+            ]}
+          />
+        </Plot>
+        <Plot
+          title={t("insights.users.standing", { p: share(u.sanctioned, u.total) })}
+          rows={[
+            { name: t("insights.users.good"), count: Math.max(u.total - u.sanctioned, 0) },
+            { name: t("insights.users.sanctioned"), count: u.sanctioned },
+          ]}
+        >
+          <DonutChart
+            data={[
+              { name: t("insights.users.good"), count: Math.max(u.total - u.sanctioned, 0) },
+              { name: t("insights.users.sanctioned"), count: u.sanctioned },
+            ]}
+          />
+        </Plot>
+        <TopList
+          title={t("insights.users.topAuthors")}
+          rows={u.top_authors.map((a) => ({ key: `@${a.key}`, value: a.count }))}
+          n={n}
+        />
+      </div>
     </>
   );
 }
@@ -231,7 +450,23 @@ function DiagramsTab({ d, n }: { d: Insights; n: Fmt }) {
       />
       <div className={grid2}>
         <Breakdown title={t("insights.diagrams.byKind")} rows={g.by_kind} />
-        <Breakdown title={t("insights.diagrams.byVisibility")} rows={g.by_visibility} />
+        <Plot
+          title={t("insights.diagrams.byVisibility")}
+          rows={g.by_visibility.map((r) => ({ name: r.key || t("insights.none"), count: r.count }))}
+        >
+          <DonutChart
+            data={g.by_visibility
+              .filter((r) => r.count > 0)
+              .map((r) => ({ name: r.key || t("insights.none"), count: r.count }))}
+          />
+        </Plot>
+        <Plot title={t("insights.diagrams.kindTreemap")} rows={g.by_kind.map((r) => ({ name: r.key, count: r.count }))}>
+          <TreemapChart
+            data={g.by_kind
+              .filter((r) => r.count > 0)
+              .map((r) => ({ name: r.key || t("insights.none"), count: r.count }))}
+          />
+        </Plot>
         <TopList
           title={t("insights.diagrams.topOwners")}
           rows={g.top_owners.map((a) => ({ key: `@${a.key}`, value: a.count }))}
@@ -260,8 +495,37 @@ function ModerationTab({ d, n }: { d: Insights; n: Fmt }) {
         title={t("insights.moderation.perDay")}
         rows={mergeDays({ opened: m.opened, resolved: m.resolved })}
         series={{ opened: t("insights.moderation.opened"), resolved: t("insights.moderation.resolved") }}
+        kind="lines"
       />
       <div className={grid2}>
+        <Panel title={t("insights.moderation.sla", { h: SLA_HOURS })}>
+          <div className="h-40">
+            <Suspense fallback={<Skeleton className="h-full w-full" />}>
+              <Gauge
+                value={m.avg_resolve_hours}
+                max={SLA_HOURS}
+                warn={SLA_HOURS * 0.75}
+                text={t("insights.hours", { n: Math.round(m.avg_resolve_hours * 10) / 10 })}
+              />
+            </Suspense>
+          </div>
+        </Panel>
+        <Plot
+          title={t("insights.moderation.backlog")}
+          rows={[
+            { name: t("insights.moderation.openReports"), count: m.open_reports },
+            { name: t("insights.moderation.openFeedback"), count: m.open_feedback },
+            { name: t("insights.moderation.openErrors"), count: m.open_errors },
+          ]}
+        >
+          <DonutChart
+            data={[
+              { name: t("insights.moderation.openReports"), count: m.open_reports },
+              { name: t("insights.moderation.openFeedback"), count: m.open_feedback },
+              { name: t("insights.moderation.openErrors"), count: m.open_errors },
+            ]}
+          />
+        </Plot>
         <Breakdown title={t("insights.moderation.byReason")} rows={m.by_reason} />
         <Breakdown title={t("insights.moderation.feedbackByKind")} rows={m.feedback_by_kind} />
       </div>
@@ -287,6 +551,7 @@ function ActivityTab({ days, n }: { days: number; n: Fmt }) {
             title={t("insights.activity.perDay")}
             rows={a.perDay.map((r) => ({ day: r.day, ok: r.ok, failed: r.failed }))}
             series={{ ok: t("insights.activity.ok"), failed: t("insights.activity.failedLabel") }}
+            kind="stacked"
           />
           <div className={grid2}>
             <Breakdown title={t("insights.activity.byAction")} rows={a.actions} />

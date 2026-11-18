@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { funnelRates, productReportSchema, readTime, stickiness } from "./product";
+import { funnelRates, heatRow, productReportSchema, readTime, stickiness } from "./product";
 
 describe("product analytics", () => {
   const r = productReportSchema.parse({
@@ -38,5 +38,19 @@ describe("product analytics edge cases", () => {
   it("stickiness is 0 with no MAU or no DAU", () => {
     expect(stickiness({ mau: 0, dau: [] } as never)).toBe(0);
     expect(stickiness({ mau: 10, dau: [] } as never)).toBe(0);
+  });
+});
+
+describe("heatRow", () => {
+  it("reads one Monday-first weekday out of Sunday-first cells and ignores bad hours", () => {
+    const cells = [
+      { dow: 0, hour: 5, count: 3 },
+      { dow: 1, hour: 23, count: 2 },
+      { dow: 2, hour: 24, count: 9 },
+    ];
+    expect(heatRow(cells, 6)[5]).toBe(3);
+    expect(heatRow(cells, 0)[23]).toBe(2);
+    expect(heatRow(cells, 1).reduce((a, b) => a + b, 0)).toBe(0);
+    expect(heatRow(cells, 3)).toHaveLength(24);
   });
 });

@@ -114,6 +114,7 @@ describe("http client", () => {
       expiresAt: "2030-01-01T00:00:00Z",
       refreshToken: "r2",
       refreshExpiresAt: "2030-02-01T00:00:00Z",
+      startedAt: expect.any(Number),
     });
   });
 

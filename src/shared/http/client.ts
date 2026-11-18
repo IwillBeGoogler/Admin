@@ -97,7 +97,10 @@ export const createHttpClient = (cfg: HttpClientConfig): HttpClient => {
         const d = body?.data;
         const token = d?.access_token || d?.token;
         if (!token) return "error";
-        cfg.tokens.set(storedFrom({ ...d, token, expires_at: d?.expires_at ?? "" }));
+        cfg.tokens.set({
+          ...storedFrom({ ...d, token, expires_at: d?.expires_at ?? "" }),
+          startedAt: before.startedAt ?? Date.now(), // the 12h cap counts from sign-in, not from each refresh
+        });
         return "ok";
       } catch {
         return "error"; // network blip

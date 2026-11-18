@@ -134,3 +134,71 @@ export const activityFromAudit = (
     actors: top(actors),
   };
 };
+
+/** Running total over a daily series, ending at `end` (e.g. today's total users). */
+export const cumulative = (days: InsightDay[], end: number): InsightDay[] => {
+  let run = end - sumDays(days);
+  return days.map((d) => {
+    run += d.count;
+    return { day: d.day, count: run };
+  });
+};
+
+/** Last 7 days against the 7 before, percent change; null when there is no earlier week to compare. */
+export const weekOverWeek = (days: InsightDay[]): number | null => {
+  if (days.length < 14) return null;
+  const cur = sumDays(days.slice(-7));
+  const prev = sumDays(days.slice(-14, -7));
+  return prev === 0 ? null : Math.round(((cur - prev) / prev) * 100);
+};
+
+/** Counts sorted high to low with the running share of the total, percent. */
+export const pareto = (rows: InsightNamed[]) => {
+  const sorted = rows.filter((r) => r.count > 0).sort((a, b) => b.count - a.count || a.key.localeCompare(b.key));
+  const total = sorted.reduce((n, r) => n + r.count, 0);
+  let run = 0;
+  return sorted.map((r) => {
+    run += r.count;
+    return { name: r.key, count: r.count, cum: Math.round((run / total) * 100) };
+  });
+};
+
+/** Weeks (rows, Monday first) by weekday (columns, Monday first) of a daily series. */
+export const calendarHeat = (days: InsightDay[]) => {
+  const weeks: { label: string; values: number[] }[] = [];
+  for (const d of days) {
+    const date = new Date(`${d.day}T00:00:00Z`);
+    const dow = (date.getUTCDay() + 6) % 7;
+    const monday = new Date(date.getTime() - dow * 86_400_000).toISOString().slice(5, 10);
+    let w = weeks.find((x) => x.label === monday);
+    if (!w) {
+      w = { label: monday, values: Array(7).fill(0) };
+      weeks.push(w);
+    }
+    w.values = w.values.map((v, i) => (i === dow ? v + d.count : v));
+  }
+  return weeks;
+};
+
+/** Likes against comments for every post that shows up in either top list. */
+export const engagementPoints = (p: Insights["posts"]) => {
+  const seen = new Map<number, { title: string; likes: number; comments: number }>();
+  for (const x of [...p.top_liked, ...p.top_commented]) {
+    seen.set(x.id, { title: x.title, likes: x.likes, comments: x.comments });
+  }
+  return [...seen.values()];
+};
+
+/** Part of a whole as a percent, 0 when the whole is empty. */
+export const share = (part: number, whole: number) => (whole ? Math.round((part / whole) * 100) : 0);
+
+/** i18n keys of the weekdays, Monday first. */
+export const WEEKDAY_KEYS = [
+  "insights.weekdays.mon",
+  "insights.weekdays.tue",
+  "insights.weekdays.wed",
+  "insights.weekdays.thu",
+  "insights.weekdays.fri",
+  "insights.weekdays.sat",
+  "insights.weekdays.sun",
+] as const;

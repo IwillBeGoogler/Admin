@@ -103,7 +103,7 @@ describe("InsightsPage tabs and export", () => {
     signIn(["insights.read"]);
     server.use(http.get(api("/admin/insights"), () => HttpResponse.json({ data: report })));
     render({ tab: "activity" });
-    expect(await screen.findByText("Liked")).toBeInTheDocument();
+    expect((await screen.findAllByText("Liked")).length).toBeGreaterThan(0);
     expect(screen.queryByRole("tab", { name: "Activity" })).toBeNull();
   });
 });
