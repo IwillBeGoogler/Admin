@@ -268,8 +268,8 @@ function EditorForm({
               <>
                 <Textarea
                   {...a}
-                  rows={16}
-                  className="font-mono"
+                  rows={30}
+                  className="min-h-[70vh] resize-y font-mono"
                   {...bodyReg}
                   ref={(el) => {
                     bodyReg.ref(el);
