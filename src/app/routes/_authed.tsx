@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, redirect, useRouter } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { currentAdminQuery, isAdmin, isSignedIn, useAuthToken, useCurrentAdmin, useLogout } from "@/contexts/identity";
-import { onSessionExpired } from "@/shared/api";
+import { onSessionExpired, restoreSession } from "@/shared/api";
 import { isApiError } from "@/shared/http";
 import { useI18n } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
@@ -11,7 +11,8 @@ import { AdminLayout } from "../layout/AdminLayout";
 
 export const Route = createFileRoute("/_authed")({
   beforeLoad: async ({ context, location }) => {
-    if (!isSignedIn()) throw redirect({ to: "/login", search: { redirect: location.href } });
+    if (!isSignedIn() && !(await restoreSession()))
+      throw redirect({ to: "/login", search: { redirect: location.href } });
     try {
       await context.queryClient.ensureQueryData(currentAdminQuery());
     } catch (e) {

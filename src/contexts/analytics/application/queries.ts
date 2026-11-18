@@ -1,4 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
+import { insightsRepository } from "../infrastructure/insightsRepository";
 import { productRepository } from "../infrastructure/productRepository";
 import { siteStatsRepository } from "../infrastructure/siteStatsRepository";
 import { statsRepository } from "../infrastructure/statsRepository";
@@ -38,3 +39,12 @@ export const siteStatsQuery = (limit: number) =>
   });
 
 export const useSiteStats = (limit = 10) => useQuery(siteStatsQuery(limit));
+
+export const insightsQuery = (days: number) =>
+  queryOptions({
+    queryKey: [...analyticsKeys.all, "insights", days] as const,
+    queryFn: ({ signal }) => insightsRepository.get(days, signal),
+    staleTime: 60_000,
+  });
+
+export const useInsights = (days: number) => useQuery(insightsQuery(days));

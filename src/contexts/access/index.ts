@@ -1,4 +1,4 @@
-export { accessKeys } from "./application/hooks";
+export { accessKeys, useAudit } from "./application/hooks";
 export { auditSearchSchema } from "./domain/access";
 export { AuditPage } from "./ui/AuditPage";
 export { PermissionsPage } from "./ui/PermissionsPage";

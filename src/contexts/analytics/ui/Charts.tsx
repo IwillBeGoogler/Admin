@@ -10,6 +10,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import type { SeriesRow } from "../domain/insights";
 import type { Counted } from "../domain/stats";
 
 const colors = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)"];
@@ -158,6 +159,40 @@ export function ViewsChart({
         {area("posts", "var(--chart-1)")}
         {area("diagrams", "var(--chart-2)")}
         {area("pages", "var(--chart-3)")}
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+}
+
+/** Any number of daily series over the same days; `series` maps a data key to its legend label. */
+export function SeriesChart({ data, series }: { data: SeriesRow[]; series: Record<string, string> }) {
+  const axis = { fill: "var(--muted-foreground)", fontSize: 12 };
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+        <XAxis
+          dataKey="day"
+          tickFormatter={(d: string) => d.slice(5)}
+          tick={axis}
+          tickLine={false}
+          axisLine={false}
+          minTickGap={24}
+        />
+        <YAxis allowDecimals={false} tick={axis} tickLine={false} axisLine={false} />
+        <Tooltip {...tooltip} />
+        {Object.entries(series).map(([key, label], i) => (
+          <Area
+            key={key}
+            type="monotone"
+            dataKey={key}
+            name={label}
+            stroke={colors[i % colors.length]}
+            fill={colors[i % colors.length]}
+            fillOpacity={0.15}
+            isAnimationActive={false}
+          />
+        ))}
       </AreaChart>
     </ResponsiveContainer>
   );

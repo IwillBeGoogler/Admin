@@ -2,6 +2,7 @@ import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/r
 import { useSyncExternalStore } from "react";
 import { clearRecent } from "@/app/command/recent";
 import { tokens } from "@/shared/api";
+import { storedFrom } from "@/shared/http/tokenStore";
 import { canAny, can as canDo, type PermissionCode } from "../domain/permissions";
 import type { LoginInput, Session } from "../domain/session";
 import { authRepository } from "../infrastructure/authRepository";
@@ -18,7 +19,7 @@ export const currentAdminQuery = () =>
 export const useAuthToken = () => useSyncExternalStore(tokens.subscribe, tokens.get, tokens.get);
 export const isSignedIn = () => tokens.get() !== null;
 
-const storeSession = (s: Session) => tokens.set({ token: s.token, expiresAt: s.expires_at });
+const storeSession = (s: Session) => tokens.set(storedFrom(s));
 
 export function useLogin() {
   const qc = useQueryClient();

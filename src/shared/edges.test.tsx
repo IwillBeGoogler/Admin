@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "./ui/dial
 
 const setup = () => {
   const tokens = createTokenStore(null);
-  tokens.set({ token: "t1", expiresAt: "2030-01-01T00:00:00Z" });
+  tokens.set({ token: "t1", expiresAt: "2030-01-01T00:00:00Z", refreshToken: "r1" });
   const onSessionExpired = vi.fn();
   return { tokens, onSessionExpired, client: createHttpClient({ tokens, locale: () => "en", onSessionExpired }) };
 };

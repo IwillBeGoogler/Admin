@@ -1,4 +1,4 @@
-import { type ApiSchemas, http } from "@/shared/api";
+import { type ApiSchemas, http, tokens } from "@/shared/api";
 import { dataEnvelope } from "@/shared/http";
 import { type PermissionSet, permissionsFromRoles, type Role } from "../domain/permissions";
 import {
@@ -45,7 +45,11 @@ export const authRepository = {
 
   async logout(): Promise<void> {
     try {
-      await http("/auth/logout", { method: "POST", noRefresh: true });
+      await http("/auth/logout", {
+        method: "POST",
+        body: { refresh_token: tokens.get()?.refreshToken },
+        noRefresh: true,
+      });
     } catch {
       /* the token is dropped locally either way */
     }

@@ -89,7 +89,8 @@ describe("ReportsPage", () => {
     expect(dialog).toHaveTextContent("Resolve 2 reports?");
     await user.click(within(dialog).getByRole("button", { name: "Resolve" }));
     expect(await screen.findByText("2 resolved")).toBeInTheDocument();
-    expect(bodies).toEqual([
+    // the two PUTs run in parallel: arrival order is not part of the contract
+    expect([...(bodies as { id: string }[])].sort((a, b) => a.id.localeCompare(b.id))).toEqual([
       { id: "7", status: "resolved", remove_content: false },
       { id: "8", status: "resolved", remove_content: false },
     ]);

@@ -1,5 +1,6 @@
 import {
   BanIcon,
+  BarChart3Icon,
   BookOpenTextIcon,
   BoxesIcon,
   BugIcon,
@@ -26,6 +27,7 @@ import type { MessageKey } from "@/shared/i18n";
 export interface NavItem {
   to:
     | "/"
+    | "/insights"
     | "/posts"
     | "/categories"
     | "/labels"
@@ -61,7 +63,10 @@ export interface NavGroup {
 export const navigation: NavGroup[] = [
   {
     label: null,
-    items: [{ to: "/", label: "nav.dashboard", icon: LayoutDashboardIcon, anyOf: ["stats.read"], hotkey: "d" }],
+    items: [
+      { to: "/", label: "nav.dashboard", icon: LayoutDashboardIcon, anyOf: ["stats.read"], hotkey: "d" },
+      { to: "/insights", label: "nav.insights", icon: BarChart3Icon, anyOf: ["stats.read"], hotkey: "i" },
+    ],
   },
   {
     label: "nav.content",
