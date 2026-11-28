@@ -1,5 +1,6 @@
 import { http } from "@/shared/api";
 import { dataEnvelope, type Page, type PageRequest, pageEnvelope } from "@/shared/http";
+import { type Certificate, certificateSchema } from "../domain/certificate";
 import {
   type ClientError,
   type ClientErrorStatus,
@@ -52,6 +53,23 @@ export const clientErrorRepository = {
         method: "PUT",
         body: { status },
         schema: dataEnvelope(clientErrorSchema),
+      })
+    ).data,
+};
+
+export const certificateRepository = {
+  list: (p: PageRequest, signal?: AbortSignal): Promise<Page<Certificate>> =>
+    http("/admin/certificates", {
+      query: { page: p.page, limit: p.limit },
+      schema: pageEnvelope(certificateSchema),
+      signal,
+    }),
+  revoke: async (id: string, reason: string): Promise<Certificate> =>
+    (
+      await http(`/admin/certificates/${encodeURIComponent(id)}/revoke`, {
+        method: "POST",
+        body: { reason },
+        schema: dataEnvelope(certificateSchema),
       })
     ).data,
 };

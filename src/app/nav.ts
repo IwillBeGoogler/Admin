@@ -1,4 +1,5 @@
 import {
+  AwardIcon,
   BanIcon,
   BarChart3Icon,
   BookOpenTextIcon,
@@ -39,6 +40,7 @@ export interface NavItem {
     | "/feedback"
     | "/client-errors"
     | "/comments"
+    | "/certificates"
     | "/users"
     | "/bans"
     | "/roles"
@@ -109,6 +111,7 @@ export const navigation: NavGroup[] = [
       },
       { to: "/feedback", label: "nav.feedback", icon: MessageSquareWarningIcon, anyOf: ["report.moderate"] },
       { to: "/client-errors", label: "nav.clientErrors", icon: BugIcon, anyOf: ["report.moderate"] },
+      { to: "/certificates", label: "nav.certificates", icon: AwardIcon, anyOf: ["certificate.revoke"] },
       { to: "/comments", label: "nav.comments", icon: MessageSquareIcon, anyOf: ["comment.moderate"], hotkey: "c" },
     ],
   },

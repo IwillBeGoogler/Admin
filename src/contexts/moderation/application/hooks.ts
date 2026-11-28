@@ -7,6 +7,7 @@ import type { ClientError, ClientErrorStatus, ClientErrorsSearch } from "../doma
 import type { Feedback, FeedbackSearch, FeedbackStatus } from "../domain/feedback";
 import { type Decision, decisionPayload, type Report, type ReportsSearch } from "../domain/report";
 import {
+  certificateRepository,
   clientErrorRepository,
   commentRepository,
   feedbackRepository,
@@ -22,6 +23,7 @@ export const moderationKeys = {
     s ? ([...moderationKeys.all, "feedback", s] as const) : ([...moderationKeys.all, "feedback"] as const),
   clientErrors: (s?: ClientErrorsSearch) =>
     s ? ([...moderationKeys.all, "client-errors", s] as const) : ([...moderationKeys.all, "client-errors"] as const),
+  certificates: () => [...moderationKeys.all, "certificates"] as const,
   comments: () => [...moderationKeys.all, "comments"] as const,
 };
 
@@ -68,6 +70,23 @@ export function useDecideReport() {
 
 /** sort is applied on the loaded rows: it must not change the query key (a refetch that resets paging). */
 const withoutSort = <T extends { sort?: string | undefined }>(s: T): T => ({ ...s, sort: undefined });
+
+export const useCertificates = () =>
+  useInfiniteQuery({
+    queryKey: moderationKeys.certificates(),
+    queryFn: ({ pageParam, signal }) => certificateRepository.list(pageParam, signal),
+    initialPageParam: { limit: PAGE } as PageRequest,
+    getNextPageParam: (last) => nextPageRequest(last.meta, PAGE),
+  });
+
+export function useRevokeCertificate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) => certificateRepository.revoke(id, reason),
+    // also after a failure: someone else may have revoked it
+    onSettled: () => qc.invalidateQueries({ queryKey: moderationKeys.certificates() }),
+  });
+}
 
 export const useFeedback = (s: FeedbackSearch) =>
   useInfiniteQuery({

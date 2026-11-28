@@ -3,6 +3,7 @@ export { clientErrorsSearchSchema } from "./domain/clientError";
 export { commentsSearchSchema } from "./domain/comment";
 export { feedbackSearchSchema } from "./domain/feedback";
 export { reportsSearchSchema } from "./domain/report";
+export { CertificatesPage } from "./ui/CertificatesPage";
 export { ClientErrorsPage } from "./ui/ClientErrorsPage";
 export { CommentsPage } from "./ui/CommentsPage";
 export { FeedbackPage } from "./ui/FeedbackPage";

@@ -41,6 +41,7 @@ export const ADMIN_PERMISSIONS = [
   "category.write",
   "label.write",
   "glossary.write",
+  "certificate.revoke",
   "role.read",
   "policy.read",
   "audit.read",
