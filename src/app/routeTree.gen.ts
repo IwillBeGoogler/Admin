@@ -15,6 +15,7 @@ import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
 import { Route as AuthedAuditRouteImport } from './routes/_authed/audit'
 import { Route as AuthedBansRouteImport } from './routes/_authed/bans'
 import { Route as AuthedCategoriesRouteImport } from './routes/_authed/categories'
+import { Route as AuthedCertificatesRouteImport } from './routes/_authed/certificates'
 import { Route as AuthedClientErrorsRouteImport } from './routes/_authed/client-errors'
 import { Route as AuthedCommentsRouteImport } from './routes/_authed/comments'
 import { Route as AuthedDiagramTemplatesRouteImport } from './routes/_authed/diagram-templates'
@@ -64,6 +65,11 @@ const AuthedBansRoute = AuthedBansRouteImport.update({
 const AuthedCategoriesRoute = AuthedCategoriesRouteImport.update({
   id: '/categories',
   path: '/categories',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedCertificatesRoute = AuthedCertificatesRouteImport.update({
+  id: '/certificates',
+  path: '/certificates',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedClientErrorsRoute = AuthedClientErrorsRouteImport.update({
@@ -178,6 +184,7 @@ export interface FileRoutesByFullPath {
   '/audit': typeof AuthedAuditRoute
   '/bans': typeof AuthedBansRoute
   '/categories': typeof AuthedCategoriesRoute
+  '/certificates': typeof AuthedCertificatesRoute
   '/client-errors': typeof AuthedClientErrorsRoute
   '/comments': typeof AuthedCommentsRoute
   '/diagram-templates': typeof AuthedDiagramTemplatesRoute
@@ -205,6 +212,7 @@ export interface FileRoutesByTo {
   '/audit': typeof AuthedAuditRoute
   '/bans': typeof AuthedBansRoute
   '/categories': typeof AuthedCategoriesRoute
+  '/certificates': typeof AuthedCertificatesRoute
   '/client-errors': typeof AuthedClientErrorsRoute
   '/comments': typeof AuthedCommentsRoute
   '/diagram-templates': typeof AuthedDiagramTemplatesRoute
@@ -235,6 +243,7 @@ export interface FileRoutesById {
   '/_authed/audit': typeof AuthedAuditRoute
   '/_authed/bans': typeof AuthedBansRoute
   '/_authed/categories': typeof AuthedCategoriesRoute
+  '/_authed/certificates': typeof AuthedCertificatesRoute
   '/_authed/client-errors': typeof AuthedClientErrorsRoute
   '/_authed/comments': typeof AuthedCommentsRoute
   '/_authed/diagram-templates': typeof AuthedDiagramTemplatesRoute
@@ -266,6 +275,7 @@ export interface FileRouteTypes {
     | '/audit'
     | '/bans'
     | '/categories'
+    | '/certificates'
     | '/client-errors'
     | '/comments'
     | '/diagram-templates'
@@ -293,6 +303,7 @@ export interface FileRouteTypes {
     | '/audit'
     | '/bans'
     | '/categories'
+    | '/certificates'
     | '/client-errors'
     | '/comments'
     | '/diagram-templates'
@@ -322,6 +333,7 @@ export interface FileRouteTypes {
     | '/_authed/audit'
     | '/_authed/bans'
     | '/_authed/categories'
+    | '/_authed/certificates'
     | '/_authed/client-errors'
     | '/_authed/comments'
     | '/_authed/diagram-templates'
@@ -393,6 +405,13 @@ declare module '@tanstack/react-router' {
       path: '/categories'
       fullPath: '/categories'
       preLoaderRoute: typeof AuthedCategoriesRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/certificates': {
+      id: '/_authed/certificates'
+      path: '/certificates'
+      fullPath: '/certificates'
+      preLoaderRoute: typeof AuthedCertificatesRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/client-errors': {
@@ -549,6 +568,7 @@ interface AuthedRouteChildren {
   AuthedAuditRoute: typeof AuthedAuditRoute
   AuthedBansRoute: typeof AuthedBansRoute
   AuthedCategoriesRoute: typeof AuthedCategoriesRoute
+  AuthedCertificatesRoute: typeof AuthedCertificatesRoute
   AuthedClientErrorsRoute: typeof AuthedClientErrorsRoute
   AuthedCommentsRoute: typeof AuthedCommentsRoute
   AuthedDiagramTemplatesRoute: typeof AuthedDiagramTemplatesRoute
@@ -577,6 +597,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAuditRoute: AuthedAuditRoute,
   AuthedBansRoute: AuthedBansRoute,
   AuthedCategoriesRoute: AuthedCategoriesRoute,
+  AuthedCertificatesRoute: AuthedCertificatesRoute,
   AuthedClientErrorsRoute: AuthedClientErrorsRoute,
   AuthedCommentsRoute: AuthedCommentsRoute,
   AuthedDiagramTemplatesRoute: AuthedDiagramTemplatesRoute,
